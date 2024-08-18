@@ -1,0 +1,114 @@
+package main
+
+import (
+    "fmt"
+)
+
+
+templ shapePopupManage(shapes []Shape, shapeTypes []ShapeType){
+    @shapeSelector(shapes)
+    <!--<details>
+    <summary>Start New Area</summary>
+    @addShapeForm(shapeTypes)
+    </details>-->
+}
+
+templ shapeSelector(shapes []Shape){
+    if (len(shapes) > 0) {
+        <select name="shape">
+            for _, shape := range shapes {
+                <option value={fmt.Sprintf("%d", shape.ID)} >{shape.ShapeTitle}</option>
+            }
+        </select>
+    }
+}
+
+templ addShapeForm(meta ShapeMeta){
+    <form hx-post="/shapes?updateMode=create-area">
+    <script>
+          document.getElementById('shapeData').value = JSON.stringify(window.existingNewAreaPoints || []);
+    </script>
+        <input type="hidden" id="shapeData" name="shapeData"></input>
+        <label>shapeTitle: <input name="shapeTitle"></input></label>
+         <label><select name="shapeKind">shapeKind
+                for _, kind := range meta.kinds {
+                    <option value={  kind.Name}>{kind.Name}</option>
+                }
+            </select></label>
+        <label>shapeType: 
+            <select name="shapeType">
+                for _, st := range meta.types {
+                    <option value={ st.Name}>{st.Name}</option>
+                }
+            </select>
+        </label>
+        <button type="submit">save</button>
+        @refreshButton("cancel","")
+    </form>
+}
+
+templ editShapeForm(shape Shape, meta ShapeMeta, msg string){
+     <form hx-post="/shapes?updateMode=create-area" hx-target="this">
+        if len(msg) > 0 {
+            @success(msg)
+        }
+         <input type="hidden" name="shapeData" value={shape.ShapeData}></input>
+        <label>shapeTitle: <input name="shapeTitle" value={shape.ShapeTitle}></input></label>
+         <label><select name="shapeKind">shapeKind
+                for _, kind := range meta.kinds {
+                    <option value={  kind.Name}
+                        if kind.Name == shape.ShapeKind {
+                            selected="selected"
+                        }
+                    >{kind.Name}</option>
+                }
+            </select></label>
+        <label>shapeType: 
+            <select name="shapeType">
+                for _, st := range meta.types {
+                    <option value={ st.Name}
+                         if st.Name == shape.ShapeType {
+                            selected="selected"
+                        }
+                    >{st.Name}</option>
+                }
+            </select>
+        </label>
+        <button type="submit">update</button>
+        <button hx-delete={ fmt.Sprintf("/shapes/%d", shape.ID) }>delete</button>
+    </form>
+}
+
+templ shapeList(shapes []Shape, shapeMeta ShapeMeta, homes []Home){
+     for _, h := range homes {
+        @homeShape(h)
+    }
+    for _, s := range shapes {
+        switch s.ShapeType {
+            case "area":
+                @areaShape(s)
+            default:
+                @warning(fmt.Sprintf("shape ShapeType not valid (%s) on %+v", s.ShapeType, s))
+            
+        }
+    }
+}
+
+templ areaShape(shape Shape){
+    <tr
+        data-id={ fmt.Sprintf("s-%v", shape.ID) }
+        data-geometry-type="Polygon"
+        data-geometry={ shape.ShapeData}
+        data-popup={fmt.Sprintf("<div hx-get=\"/shapes/%d\" hx-trigger=\"revealed\">loading..</div>", shape.ID)}
+        data-color="red"
+    ></tr>
+}
+
+templ homeShape(h Home){
+    <tr
+        data-id={fmt.Sprintf("h-%v", h.ID)}
+        data-geometry-type="Point"
+        data-geometry={ fmt.Sprintf("[%f, %f]", h.Lat, h.Lng)}
+        data-popup={fmt.Sprintf("<div hx-get=\"/homes/%d\" hx-trigger=\"revealed\" ></div>", h.ID)}
+    ></tr>
+}

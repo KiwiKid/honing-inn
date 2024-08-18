@@ -1,0 +1,37 @@
+package main
+
+import (
+    "fmt"
+)
+
+templ warning(msg string){
+    <div>{msg}</div>
+}
+
+templ success(msg string){
+    <div>{msg}</div>
+}
+
+templ refreshButton(btnText string, msg string){
+    if len(msg) > 0 {
+        <h1>{msg}</h1>
+    }
+    <button onclick="location.reload();">{btnText}</button>
+}
+
+templ deleteAllForm(shapes []Shape, homes []Home){
+    <head>
+      <script
+            src="https://unpkg.com/htmx.org@1.9.0"
+            integrity="sha384-aOxz9UdWG0yBiyrTwPeMibmaoq07/d3a96GCbb9x60f3mOt5zwkjdbcHFnKH8qls"
+            crossorigin="anonymous"
+            ></script>
+    </head>
+    <body>
+    <form hx-delete="/delete-all">
+        { fmt.Sprintf("%+v", shapes) }
+        { fmt.Sprintf("%+v", homes) }
+        <button type="submit" hx-confirm="delete all existing objects?">delete all</button>
+    </form>
+    </body>
+}

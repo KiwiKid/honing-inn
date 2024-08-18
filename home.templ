@@ -1,0 +1,26 @@
+package main
+
+import (
+    "fmt"
+)
+
+templ homeForm(lat string, lng string){
+    <h1>Home Form {fmt.Sprintf("%s %s", lat, lng)}</h1>
+}
+
+templ homeEditForm(home Home, msg string){
+    <form hx-post="/homes">
+    if len(msg) > 0 {
+        <div>{msg}</div>
+    }
+        <input type="hidden" name="ID" value={ fmt.Sprintf("%d", home.ID) }></input>
+        <input type="hidden" name="lat" value={ fmt.Sprintf("%v", home.Lat) }></input>
+        <input type="hidden" name="lng" value={ fmt.Sprintf("%v", home.Lng) }></input>
+        <label>Title<input value={ home.Title } name="title"></input></label>
+        <label>Url<input value={ home.Url } name="url"></input></label>
+        <label>Notes<input value={ home.Notes } name="notes"></input></label>
+        <button type="submit">save</button>
+        <button hx-delete={ fmt.Sprintf("/homes/%d", home.ID) }>delete</button>
+
+    </form>
+}
