@@ -8,7 +8,7 @@ templ homeForm(lat string, lng string){
     <h1>Home Form {fmt.Sprintf("%s %s", lat, lng)}</h1>
 }
 
-templ homeEditForm(home Home, msg string){
+templ homeEditForm(home Home, msg string, pointMeta PointMeta){
     <form hx-post="/homes">
     if len(msg) > 0 {
         <div>{msg}</div>
@@ -19,6 +19,11 @@ templ homeEditForm(home Home, msg string){
         <label>Title<input value={ home.Title } name="title"></input></label>
         <label>Url<input value={ home.Url } name="url"></input></label>
         <label>Notes<input value={ home.Notes } name="notes"></input></label>
+        <select name="pointType">
+            for _, h := range pointMeta.types {
+                <option value={h.Name}>{h.Name}</option>
+            } 
+        </select>
         <button type="submit">save</button>
         <button hx-delete={ fmt.Sprintf("/homes/%d", home.ID) }>delete</button>
 

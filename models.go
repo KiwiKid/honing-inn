@@ -9,12 +9,13 @@ type Factor struct {
 
 // Home represents a home with specific attributes.
 type Home struct {
-	ID    uint    `gorm:"primaryKey"` // Primary key
-	Lat   float64 `gorm:"not null"`   // Required field (non-nullable)
-	Lng   float64 `gorm:"not null"`   // Required field (non-nullable)
-	Title string  `gorm:"default:null"`
-	Url   string  `gorm:"default:null"`
-	Notes string  `gorm:"default:null" form:"notes"` // Optional field (nullable, form tag for form binding)
+	ID        uint    `gorm:"primaryKey"` // Primary key
+	Lat       float64 `gorm:"not null"`   // Required field (non-nullable)
+	Lng       float64 `gorm:"not null"`   // Required field (non-nullable)
+	PointType string  `gorm:"default:null"`
+	Title     string  `gorm:"default:null"`
+	Url       string  `gorm:"default:null"`
+	Notes     string  `gorm:"default:null" form:"notes"` // Optional field (nullable, form tag for form binding)
 }
 
 // HomeFactorRating represents a rating for a specific factor of a home.
@@ -54,4 +55,33 @@ type MapMeta struct {
 	Lng  float64
 	Zoom int
 	Mode string
+}
+
+type PointMeta struct {
+	types []PointTypes
+	icons []PointIcons
+}
+
+type PointTypes struct {
+	ID   uint   `gorm:"primaryKey"`
+	Name string `json:"name"`
+}
+
+type PointIcons struct {
+	ID   uint   `gorm:"primaryKey"`
+	Name string `json:"name"`
+}
+
+
+func GetPointMeta() PointMeta {
+	return PointMeta{
+		types: []PointTypes{
+			{ID: 1, Name: "Home"},
+			{ID: 2, Name: "RedFlag"},
+		},
+		icons: []PointIcons{
+			{ID: 1, Name: "Home"},
+			{ID: 2, Name: "Shape"},
+		},
+	}
 }

@@ -50,7 +50,7 @@ templ mapper(meta MapMeta, homes []Home, shapes []Shape) {
 }
 
 
-.modeset {
+.modeset2 {
   position: absolute;
   top: 98px;
   right: 10px;
@@ -61,8 +61,19 @@ templ mapper(meta MapMeta, homes []Home, shapes []Shape) {
 }
 
 .infobox {
-    hight: 200px;
+    height: 200px;
     width: 200px;
+}
+
+.tools { 
+    position: absolute;
+  top: 98px;
+  right: 10px;
+    z-index: 99999 !important;
+padding: 10px;
+  height: 30px;
+  width: 120px;
+    
 }
 
     </style>
@@ -154,18 +165,14 @@ templ mapper(meta MapMeta, homes []Home, shapes []Shape) {
             const controlDiv = L.DomUtil.create('div', 'custom-control');
 
             // Add content to the control
-            controlDiv.innerHTML = `<select id="mode" class="modeset" name="mode" click="(e) => e.stopPropagation()" >
+            controlDiv.innerHTML = `<div class="tools" click="(e) => e.stopPropagation()" >
+            <select id="mode" class="modeset" name="mode" click="(e) => e.stopPropagation()" >
                         <option value="---">---</option>
                         <option value="point">Create Points</option>
                         <option value="area">Create Areas</option>
                     </select>
-            
+            </div>
             `;
-
-            // Add a click event listener
-            controlDiv.addEventListener('click', () => {
-               // alert('Button clicked!');
-            });
 
             const modeSetting = new URLSearchParams(window.location.search)
             const select = controlDiv.firstChild
@@ -200,12 +207,12 @@ templ mapper(meta MapMeta, homes []Home, shapes []Shape) {
             })
         });
 
-        this.on('moveend', function(e){
+      /*  this.on('moveend', function(e){
                 console.log('moveend')
         })
         this.on('move', function(e){
                 console.log('move')
-        })
+        })*/
 
         this.on('moveend', function(e){
             const mode = document.getElementById('mode')
@@ -246,13 +253,13 @@ templ mapper(meta MapMeta, homes []Home, shapes []Shape) {
       window.addEventListener('map:click', (event) => {
         const { point } = event.detail;
         
-        if(event.explicitOriginalTarget.id !== "map" || event.explicitOriginalTarget.id === "mode"){
+        if(event.target.name === "mode"){
             console.log('non-map click')
-            console.log(event.explicitOriginalTarget)
+            console.log(event)
             return    
         }else {
             console.log('map click')
-            console.log(event.explicitOriginalTarget)
+            console.log(event)
         }
 
         

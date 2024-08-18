@@ -349,7 +349,9 @@ func singleHomeHandler(db *gorm.DB) http.HandlerFunc {
 
 			home := GetHome(db, homeId)
 
-			homeForm := homeEditForm(home, "")
+			pointMeta := GetPointMeta()
+
+			homeForm := homeEditForm(home, "", pointMeta)
 			homeForm.Render(GetContext(r), w)
 			return
 		case "DELETE":
@@ -418,6 +420,7 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 			latStr := r.FormValue("lat")
 			lngStr := r.FormValue("lng")
 			title := r.FormValue("title")
+			pointType := r.FormValue("pointType")
 			notes := r.FormValue("notes")
 			url := r.FormValue("url")
 
@@ -436,11 +439,12 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 
 			// Create a Home object with form data
 			home := Home{
-				Lat:   lat,
-				Lng:   lng,
-				Title: title,
-				Notes: notes,
-				Url:   url,
+				Lat:       lat,
+				Lng:       lng,
+				PointType: pointType,
+				Title:     title,
+				Notes:     notes,
+				Url:       url,
 			}
 
 			var msg string
@@ -453,7 +457,9 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 				msg = "Updated Point"
 			}
 
-			homeForm := homeEditForm(home, msg)
+			pointMeta := GetPointMeta()
+
+			homeForm := homeEditForm(home, msg, pointMeta)
 			homeForm.Render(GetContext(r), w)
 			return
 		default:
