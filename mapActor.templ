@@ -1,4 +1,22 @@
+package main
 
+templ span(){
+  <span></span>
+}
+script mapActor() {
+  
+  /**
+ * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Map} L 
+ * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Marker} L.Marker
+ * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').LatLng} L.LatLng
+ */
+
+
+console.log('mapActor')
+if(window.mapActor){
+  console.log('map actor ran - already init');
+   return;
+}
 
 
 class mapActor {
@@ -13,6 +31,8 @@ class mapActor {
       this.polygons = [];
       this.mode = initialMode;
       this.mapContainerId = mapContainerId;
+      this.mapMeta = null
+
       
       this.createPopupOptions = {
         color: 'green',
@@ -36,58 +56,73 @@ class mapActor {
 
 
       window.shapeLayers = {};
+
+      window.mapActor = this;
+      window.myMap = this.map;
+
+      var warning = L.layerGroup([], { collapsed: false});
+      var noGo = L.layerGroup([]);
+      var good = L.layerGroup([]);
+      var homes = L.layerGroup([],  { collapsed: false});
+      var redFlags = L.layerGroup([]);
+
+      window.overlayMaps = {
+          "warning": warning,
+          "noGo": noGo,
+          "good": good,
+          "homes": homes,
+          "redFlags": redFlags
+      };
+
     }
   
     /**
      * Initializes the map using query string parameters for latitude, longitude, and zoom level.
-     */
+     */ 
 
     initMap() {
+      this.mapMeta = JSON.parse(document.getElementById(this.mapContainerId).getAttribute('data-meta')) 
+
       var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '© OpenStreetMap'
       });
-      
+
       var osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France'});
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France'});
+    
+
+        var baseMaps = {
+          "OpenStreetMap": osm,
+          "OpenStreetMap.HOT": osmHOT
+      };
+
+      if(this.mapMeta.ProcessMode){
+        this.map = L.map(this.mapContainerId, {
+          center: [this.mapMeta.Lat, this.mapMeta.Lng],
+          zoom: this.mapMeta.Zoom,
+          layers: [osm, osmHOT]
+        })
+
+        window.myMap = this.map;
+        window.mapActor = this;
+        const mapProcessingMeta = JSON.parse(document.getElementById(this.mapContainerId).getAttribute('data-processing-meta'))
+        this.handleMapProcessing(mapProcessingMeta)
+        return
+      }
       
-
-          var baseMaps = {
-            "OpenStreetMap": osm,
-            "OpenStreetMap.HOT": osmHOT
-        };
-        
-        var warning = L.layerGroup([], { collapsed: false});
-        var noGo = L.layerGroup([]);
-        var good = L.layerGroup([]);
-        var homes = L.layerGroup([],  { collapsed: false});
-        var redFlags = L.layerGroup([]);
-
-        var overlayMaps = {
-            "warning": warning,
-            "noGo": noGo,
-            "good": good,
-            "homes": homes,
-            "redFlags": redFlags
-              
-        };
-      const queryParams = new URLSearchParams(window.location.search);
-      const lat = parseFloat(queryParams.get('lat')) || -43.53937676715642;
-      const lng = parseFloat(queryParams.get('lng')) || 172.55882263183597;
-      const zoom = parseInt(queryParams.get('zoom'), 10) || 13;
-  
       this.map = L.map(this.mapContainerId, {
-        center: [lat, lng],
-        zoom: zoom,
-        layers: [osm]
+        center: [this.mapMeta.Lat, this.mapMeta.Lng],
+        zoom: this.mapMeta.Zoom,
+        layers: [osm, osmHOT],
+        preferCanvas: true
       })
 
 
       var layerControl = L.control.layers(baseMaps, overlayMaps, { collapsed: false}).addTo(this.map);
       window.layerControl = layerControl
-      window.overlayMaps = overlayMaps
-      
+=      
         this.map.on('popupopen', function(e) {
               const popups = document.querySelectorAll(".leaflet-popup-content-wrapper")
               popups.forEach((p) => {
@@ -101,19 +136,18 @@ class mapActor {
         }
           });
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+   /*   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
-      }).addTo(this.map);
+      }).addTo(this.map);*/
 
       this.map.on('click', (e) => this.handleMapClick(e, this.map))
       this.map.on('moveend', (e) => this.handleMapMoveEnd(e))
       this.map.on('zoonend', (e) => this.handleMapMoveEnd(e))
 
 
-      window.myMap = this.map;
-      window.mapActor = this;
 
       this.addCustomControl();
+      this.processShapesAndHomes();
   }
 
 handleMapClick(event, map){
@@ -358,7 +392,7 @@ handleMapMoveEnd(e){
 
           break;
         default: 
-        console.warn(`addMarker - pointKind "${options.pointKind}" not found`)
+        console.warn(`addMarker - pointKind "${options.pointKind} not found`)
       }
 
     }
@@ -442,23 +476,172 @@ handleMapMoveEnd(e){
     }
 
 
-  
+
+        // Function to collect and process shapes and homes
+    processShapesAndHomes() {
+
+          console.log('shape list js - processShapesAndHomes')
+          // Group shapes into layers
+          window.shapeLayers = {};
+
+              console.log(' Add home markers')
+
+         document.querySelectorAll('span[data-shape-id]').forEach(function(element) {
+              console.log('Processing shapes');
+              if (element.getAttribute('rendered') !== 'true') {
+                  const shapeData = JSON.parse(element.getAttribute('data-shape-data'));
+                  const shapeId = element.getAttribute('data-shape-id');
+                  const shapeKind = element.getAttribute('data-shape-kind');
+
+                  // Get the corresponding layer group for the shape kind
+            
+                  // Add the polygon to the layer group
+                  window.mapActor.addPolygon(shapeData, { shapeKind: shapeKind, shapeId: shapeId }, window.mapActor.editAreaPopupOptions)
+                     
+
+                  element.setAttribute('rendered', 'true');
+              }
+          }.bind(this)); // Bind 'this' to ensure 'this.map' is accessible
+
+          console.log('Adding home markers');
+
+          // Add home markers
+          document.querySelectorAll('span[data-home-id]').forEach(function(element) {
+              console.log('Processing homes');
+              if (element.getAttribute('rendered') !== 'true') {
+                  const lat = parseFloat(element.getAttribute('data-lat'));
+                  const lng = parseFloat(element.getAttribute('data-lng'));
+                  const homeId = element.getAttribute('data-home-id');
+                  const pointKind = element.getAttribute('data-point-kind');
+
+                  window.mapActor.addMarker(lat, lng, { homeId, pointKind })
+                  // Add the marker to the 'homes' layer group
+                  /*L.marker([lat, lng])
+                      .addTo(overlayMaps.homes)
+                      ;*/
+
+                  element.setAttribute('rendered', 'true');
+              }
+          });
+      }
+
+      // Initialize map and process shapes and homes
+   
+      handleMapProcessing(mapProcessingMeta) {
+        console.log('handleMapProcessing', mapProcessingMeta);
+      
+        const map = this.map;  // Reference to your Leaflet map instance
+        const gridHeight = mapProcessingMeta.GridHeight;
+        const gridWidth = mapProcessingMeta.GridWidth;
+        let currentRow = 0;
+        let currentCol = 0;
+      
+        // Move the map to the initial position
+      //  map.setView(mapProcessingMeta.start_point, mapProcessingMeta.zoom);
+      
+        // Function to capture a screenshot and send it to the backend
+        const processCurrentView = () => {
+          this.captureScreenshot().then((imageData) => {
+
+            const payload = {
+              processingMeta: mapProcessingMeta,
+              current_row: currentRow,
+              current_col: currentCol,
+              image_data: imageData,  // Base64 encoded image data
+            };
+
+            
+            fetch('/process', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json', // Specify the content type
+              },
+              body: JSON.stringify(payload), // Convert the payload object to a JSON string
+            })
+              .then(response => {
+                if (!response.ok) {
+                  throw new Error('Network response was not ok');
+                }
+                htmx.process(response.body()) // Parse the JSON from the response
+              })
+              .then(data => {
+                console.log(`Processed row ${currentRow}, col ${currentCol}: `, data);
+                moveToNextCell();
+              })
+              .catch(error => {
+                htmx.process(response.body()) // Parse the JSON from the response
+
+                console.error(`Error processing row ${currentRow}, col ${currentCol}: `, error);
+              });
+          });
+        };
+      
+        // Function to move to the next grid cell
+        const moveToNextCell = () => {
+          if (currentCol < gridWidth - 1) {
+            currentCol++;
+          } else {
+            currentCol = 0;
+            if (currentRow < gridHeight - 1) {
+              currentRow++;
+            } else {
+              console.log("Grid processing complete");
+              return;  // Processing is complete
+            }
+          }
+      
+          // Calculate the new center for the next grid cell based on map bounds
+          const bounds = map.getBounds();
+          const latDelta = bounds.getNorth() - bounds.getSouth();
+          const lngDelta = bounds.getEast() - bounds.getWest();
+      
+          const newLat = bounds.getSouth() + currentRow * latDelta;
+          const newLng = bounds.getWest() + currentCol * lngDelta;
+      
+          map.setView([newLat, newLng], mapProcessingMeta.zoom);  // Trigger the 'moveend' event
+        };
+      
+        // Event listener for when the map finishes moving
+        map.on('moveend', function (e) {
+          // Use the event data to update the URL query parameter
+      
+          processCurrentView();  // Capture screenshot and process current view
+        });
+      
+        // Start processing by moving to the first grid cell
+        moveToNextCell();
+      }
+      
+      // Example method to capture a screenshot of the map using leaflet-image
+      captureScreenshot() {
+        return new Promise((resolve, reject) => {
+          leafletImage(this.map, function (err, canvas) {
+            if (err) {
+              reject(err);
+              return;
+            }
+            
+            
+            // Convert the canvas to base64 image data
+            const base64data = canvas.toDataURL().split(',')[1];  // Strip the data URL prefix
+            resolve(base64data);  // Resolve with base64 encoded image
+
+            var img = document.createElement('img');
+            var dimensions = this.map.getSize();
+            img.width = dimensions.x;
+            img.height = dimensions.y;
+            img.src = canvas.toDataURL();
+            document.getElementById('images').innerHTML = '';
+            document.getElementById('images').appendChild(img);
+          });
+        });
+      }
+      
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  console.log('INIT MAP')
+  const mapController = new mapActor('map');
+  mapController.initMap();
 
     function startArea(lat, lng){
         setMode('area')
@@ -568,19 +751,15 @@ handleMapMoveEnd(e){
     });*/
 
 
-    /** @@deprecated */
-document.addEventListener("DOMContentLoaded", function() {
+//ocument.addEventListener("DOMContentLoaded", function() {
       // Create an instance of mapActor and initialize the map
-      const mapController = new mapActor('map');
-      mapController.initMap();
-      
-      mapController.setMode('point');
-      
+
+            
 
       // Clear markers and polygons (when needed)
       // mapController.clearMarkers();
       // mapController.clearPolygons();
-    });
+  //  });
 
 
     // Add the custom control to the map
@@ -593,4 +772,6 @@ document.addEventListener("DOMContentLoaded", function() {
             mode.value = mode
       }
     
+
       
+    }

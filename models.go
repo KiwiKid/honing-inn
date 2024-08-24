@@ -51,10 +51,11 @@ type ShapeMeta struct {
 }
 
 type MapMeta struct {
-	Lat  float64
-	Lng  float64
-	Zoom int
-	Mode string
+	Lat         float64
+	Lng         float64
+	Zoom        int
+	Mode        string
+	ProcessMode bool
 }
 
 type PointMeta struct {
@@ -71,7 +72,6 @@ type PointIcons struct {
 	ID   uint   `gorm:"primaryKey"`
 	Name string `json:"name"`
 }
-
 
 func GetPointMeta() PointMeta {
 	return PointMeta{

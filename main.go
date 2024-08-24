@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
-	"image/png"
 	"io"
 	"log"
 	"mime/multipart"
@@ -37,6 +36,7 @@ func startServer(r *chi.Mux, portStr string) {
 }
 
 type EnvConfig struct {
+	BaseURL             string
 	DBUrl               string
 	HuggingFaceAPIToken string
 }
@@ -44,6 +44,7 @@ type EnvConfig struct {
 func GetEnvConfig() EnvConfig {
 
 	config := EnvConfig{
+		BaseURL:             os.Getenv("BASE_URL"),
 		DBUrl:               os.Getenv("DATABASE_URL"),
 		HuggingFaceAPIToken: os.Getenv("HUGGINGFACE_API_TOKEN"),
 	}
@@ -71,8 +72,6 @@ func main() {
 	// Create a new router
 	r := chi.NewRouter()
 
-	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
-
 	// Define routes with method-specific handlers
 	r.Get("/shapes", shapeHandler(db))
 	r.Get("/shapes/{shapeId:[0-9]+}", specificShapeHandler(db))
@@ -91,7 +90,8 @@ func main() {
 	r.Post("/homes", homeHandler(db)) // Assuming POST for creating a home
 	r.Get("/", mapHandler(db))
 
-	r.Get("/process", mapProcessHandler(db, envConfig))
+	r.Get("/process", mapProcessView(db, envConfig))
+	r.Post("/process", mapProcessHandler(db, envConfig))
 
 	r.Get("/delete-all", deleteHandler(db))
 	r.Delete("/delete-all", deleteHandler(db))
@@ -114,16 +114,12 @@ func mapHandler(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
-
-			homes := GetHomes(db)
-			shapes := GetShapes(db)
-			log.Printf("Homes: %v Shapes: %v", len(homes), len(shapes))
-
 			meta := MapMeta{
-				Lat:  -43.53937676715642,
-				Lng:  172.55882263183597,
-				Zoom: 13,
-				Mode: "---",
+				Lat:         -43.53937676715642,
+				Lng:         172.55882263183597,
+				Zoom:        13,
+				Mode:        "---",
+				ProcessMode: false,
 			}
 
 			lat := r.URL.Query().Get("lat")
@@ -143,8 +139,7 @@ func mapHandler(db *gorm.DB) http.HandlerFunc {
 				meta.Mode = mode
 			}
 
-			log.Printf("home render: %+v", shapes)
-			mapComp := mapper(meta, homes, shapes)
+			mapComp := mapper(meta)
 			mapComp.Render(GetContext(r), w)
 			log.Printf("home render done")
 
@@ -168,11 +163,72 @@ func healthHandler() http.HandlerFunc {
 	}
 }
 
-type MapRequest struct {
+type MapProcessRequest struct {
 	StartPoint [2]float64 `json:"start_point"` // [lat, lng]
 	Zoom       int        `json:"zoom"`
 	Width      int        `json:"width"`
 	Height     int        `json:"height"`
+	GridHeight int        `json:"grid_height"`
+	GridWidth  int        `json:"grid_width"`
+}
+
+type MapProcessingMeta struct {
+	GridHeight int
+	GridWidth  int
+}
+
+func mapProcessView(db *gorm.DB, envConfig EnvConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		meta := MapMeta{
+			Lat:         -43.53937676715642,
+			Lng:         172.55882263183597,
+			Zoom:        16,
+			Mode:        "---",
+			ProcessMode: true,
+		}
+
+		lat := r.URL.Query().Get("lat")
+		lng := r.URL.Query().Get("lng")
+		if lat != "" && lng != "" {
+			meta.Lat, _ = strconv.ParseFloat(lat, 64)
+			meta.Lng, _ = strconv.ParseFloat(lng, 64)
+		}
+
+		zoom := r.URL.Query().Get("zoom")
+		if zoom != "" {
+			meta.Zoom, _ = strconv.Atoi(zoom)
+		}
+
+		mode := r.URL.Query().Get("mode")
+		if mode != "" {
+			meta.Mode = mode
+		}
+
+		processMeta := MapProcessingMeta{
+			GridHeight: 10,
+			GridWidth:  10,
+		}
+
+		gridHeight := r.URL.Query().Get("grid_height")
+		if gridHeight != "" {
+			processMeta.GridHeight, _ = strconv.Atoi(gridHeight)
+		}
+
+		gridWidth := r.URL.Query().Get("grid_width")
+		if gridWidth != "" {
+			processMeta.GridWidth, _ = strconv.Atoi(gridWidth)
+		}
+
+		mapComp := mapperProcessView(meta, processMeta)
+		mapComp.Render(GetContext(r), w)
+
+	}
+}
+
+type MapRequest struct {
+	CurrentRow int    `json:current_row"`
+	CurrentCol int    `json:current_col"`
+	ImageData  string `json:"image_data"` // Changed to string for Base64 encoded data
 }
 
 func mapProcessHandler(db *gorm.DB, envConfig EnvConfig) http.HandlerFunc {
@@ -180,58 +236,51 @@ func mapProcessHandler(db *gorm.DB, envConfig EnvConfig) http.HandlerFunc {
 		var req MapRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			warning := warning(fmt.Sprintf("Invalid request %+v", err))
+			warning := warning(fmt.Sprintf("Invalid payload %+v", err))
 			warning.Render(GetContext(r), w)
 			return
-
 		}
+		log.Printf("MAP PROCESS HANDLER %+v", req)
 
-		// Process the map and generate an image
-		img := processMap(req.StartPoint, req.Zoom, req.Width, req.Height)
-
-		// Encode the image as PNG
-		var buf bytes.Buffer
-		if err := png.Encode(&buf, img); err != nil {
-			warning := warning(fmt.Sprintf("Error encoding image: %v", err))
-			warning.Render(GetContext(r), w)
-			return
-
-		}
-
-		// Post the image to Hugging Face API for feature classification
-		result, err := classifyImageWithHuggingFace(buf.Bytes(), envConfig)
+		// Pass the image data to the processor
+		result, err := classifyImageWithHuggingFace(req, envConfig)
 		if err != nil {
-			warning := warning(fmt.Sprintf("Error classifying image: %v", err))
+			warning := warning(fmt.Sprintf("Error classifying image: %+v", err))
 			warning.Render(GetContext(r), w)
 			return
 		}
 
 		// Log the save action (dummy save)
-		log.Println("Map image saved with location:", req.StartPoint)
-		success := success(fmt.Sprintf("Map image saved %+v", result))
+		success := success(fmt.Sprintf("FAKE FAKE FAKE MAP IMAGE saved %+v", result))
 		success.Render(GetContext(r), w)
 		return
 		// Send the classification result back to the client
 		//	w.Header().Set("Content-Type", "application/json")
 		//	w.Write(result)
+
 	}
 }
 
-func classifyImageWithHuggingFace(imageData []byte, envConfig EnvConfig) ([]byte, error) {
-	// Prepare a multipart form request with the image
+func classifyImageWithHuggingFace(request MapRequest, envConfig EnvConfig) ([]byte, error) {
+	// Prepare the multipart form request with the image data
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
 	part, err := writer.CreateFormFile("file", "image.png")
 	if err != nil {
 		return nil, err
 	}
-	part.Write(imageData)
+
+	// Write image data to the form file
+	_, err = io.Copy(part, bytes.NewReader([]byte(request.ImageData)))
+	if err != nil {
+		return nil, err
+	}
 	writer.Close()
 
 	const HuggingFaceAPIURL = "https://api-inference.huggingface.co/models/{model_name}"
-	// Make the request to Hugging Face API
 	req, err := http.NewRequest("POST", HuggingFaceAPIURL, &body)
 	if err != nil {
+		log.Printf("Error creating request to Hugging Face API: ", err)
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+envConfig.HuggingFaceAPIToken)
@@ -240,6 +289,8 @@ func classifyImageWithHuggingFace(imageData []byte, envConfig EnvConfig) ([]byte
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Printf("Error creating http client to Hugging Face API: ", err)
+
 		return nil, err
 	}
 	defer resp.Body.Close()

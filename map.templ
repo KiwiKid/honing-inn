@@ -4,119 +4,15 @@ import (
     "fmt"
 )
 
-templ mapper(meta MapMeta, homes []Home, shapes []Shape) {
+templ mapper(meta MapMeta) {
     <head>
-        <link
-            rel="stylesheet"
-            href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
-            integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
-            crossorigin=""
-            />
-            <link rel="stylesheet" href="reset.css" />
-            <link rel="stylesheet" href="app.css" />
-            <script
-            src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
-            integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM="
-            crossorigin=""
-            ></script>
-            <script
-            src="https://unpkg.com/htmx.org@1.9.0"
-            integrity="sha384-aOxz9UdWG0yBiyrTwPeMibmaoq07/d3a96GCbb9x60f3mOt5zwkjdbcHFnKH8qls"
-            crossorigin="anonymous"
-            ></script>
-
+      @globalHeadLinks()
     </head>
-    <body>
-        <!--<script src="./static/mapActor.js"></script>-->
+    <body onload={ mapActor() }>
 
-    <style>
-    #map {
-        height: 100%;
-        width: 100%;
-    }
+    @globalStyles()
 
-
-.custom-control {
-  box-sizing: border-box;
-  background-color: #fff;
-  border: 1px solid #ccc;
-  line-height: 31px;
-  text-align: center;
-  text-decoration: none;
-  color: black;
-  border-radius: 2px;
-  width: 33px;
-  height: 33px;
-  border: 2px solid rgba(0, 0, 0, 0.2);
-}
-
-
-.modeset2 {
-  position: absolute;
-  top: 98px;
-  right: 10px;
-  z-index: 99999 !important;
-  font-size: 15px;
-  height: 30px;
-  width: 120px;
-}
-
-.infobox {
-    height: 200px;
-    width: 200px;
-}
-
-.tools { 
-    position: absolute;
-  top: 98px;
-  right: 10px;
-    z-index: 99999 !important;
-padding: 10px;
-  height: 30px;
-  width: 120px;
-    
-}
-
-
-/* Basic form input styles */
-input, textarea, select, button {
-  padding: 0.75rem 1rem; /* Increase padding */
-  font-size: 1rem; /* Slightly larger font */
-  border-radius: 0.375rem; /* Tailwind's rounded-md equivalent */
-  border: 1px solid #d1d5db; /* Light border */
-  background-color: #f9fafb; /* Light background */
-  transition: border-color 0.2s ease, box-shadow 0.2s ease; /* Smooth transitions */
-}
-
-/* Focus state for better accessibility */
-input:focus, textarea:focus, select:focus, button:focus {
-  outline: none;
-  border-color: #3b82f6; /* Tailwind blue-500 */
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); /* Focus shadow */
-}
-
-/* Basic button styles */
-button {
-  background-color: #3b82f6; /* Tailwind blue-500 */
-  color: white;
-  transition: background-color 0.2s ease;
-}
-
-/* Button hover state */
-button:hover {
-  background-color: #2563eb; /* Darker blue */
-}
-
-/* Responsive adjustments for smaller screens */
-@media (max-width: 640px) {
-  input, textarea, select, button {
-    width: 100%; /* Full width on small screens */
-  }
-}
-
-
-    </style>
-     <div id="map" class="map" data-center={ fmt.Sprintf("[%f, %f]", meta.Lat, meta.Lng) } data-zoom={ fmt.Sprintf("%d", meta.Zoom)}>
+     <div id="map" class="map" data-meta={ templ.JSONString(meta) } data-center={ fmt.Sprintf("[%f, %f]", meta.Lat, meta.Lng) } data-zoom={ fmt.Sprintf("%d", meta.Zoom)}>
         <div data-tile="EsriWorldImagery" data-max-zoom="19" data-min-zoom="5" data-default></div>
             <div data-tile="OpenStreetMap"></div>
             <table id="map-container" >
@@ -129,10 +25,8 @@ button:hover {
                 <div hx-get="/shapes?mode=all" hx-trigger="revealed">loading shapes..</div>
                
             </table>
-            
         </div>
 
-    <script src="/static/mapActor.js" type="text/javascript" />
 
     </body>
 }

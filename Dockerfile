@@ -9,8 +9,6 @@ COPY . .
 
 RUN go build -v -o /run-app .
 
-COPY ./static/ /srv/http/static/
-
 FROM debian:bookworm
 
 COPY --from=builder /run-app /usr/local/bin/

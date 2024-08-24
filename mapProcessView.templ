@@ -1,0 +1,34 @@
+package main
+
+import (
+    "fmt"
+)
+
+templ mapperProcessView(meta MapMeta, processingMeta MapProcessingMeta) {
+    <head>
+       @globalHeadLinks()
+<script src="
+https://cdn.jsdelivr.net/npm/leaflet-image@0.4.0/leaflet-image.min.js
+"></script>
+    </head>
+       <body onload={ mapActor() }>
+
+        @globalStyles()
+    
+     <div id="map" class="map" data-processing-meta={ templ.JSONString(processingMeta)}  data-meta={ templ.JSONString(meta) } data-center={ fmt.Sprintf("[%f, %f]", meta.Lat, meta.Lng) } data-zoom={ fmt.Sprintf("%d", meta.Zoom)}>
+        <div data-tile="EsriWorldImagery" data-max-zoom="19" data-min-zoom="5" data-default></div>
+        <div data-tile="OpenStreetMap"></div>
+        <table id="map-container" >
+            
+            <div id="info" class="leaflet-bar leaflet-control infobox" >
+                
+                <span class=" zoom-level" id="zoom-level"></span>
+
+            </div>               
+        </table>
+        
+    </div>
+
+
+    </body>
+}

@@ -86,56 +86,6 @@ templ shapeList(shapes []Shape, shapeMeta ShapeMeta, homes []Home){
         console.log('shape list js')
         
 
-        // Function to collect and process shapes and homes
-        function processShapesAndHomes() {
-
-            console.log('shape list js - processShapesAndHomes')
-            // Group shapes into layers
-            window.shapeLayers = {};
-
-                console.log(' Add home markers')
-
-           document.querySelectorAll('span[data-shape-id]').forEach(function(element) {
-                console.log('Processing shapes');
-                if (element.getAttribute('rendered') !== 'true') {
-                    const shapeData = JSON.parse(element.getAttribute('data-shape-data'));
-                    const shapeId = element.getAttribute('data-shape-id');
-                    const shapeKind = element.getAttribute('data-shape-kind');
-
-                    // Get the corresponding layer group for the shape kind
-              
-                    // Add the polygon to the layer group
-                    window.mapActor.addPolygon(shapeData, { shapeKind: shapeKind, shapeId: shapeId }, window.mapActor.editAreaPopupOptions)
-                       
-
-                    element.setAttribute('rendered', 'true');
-                }
-            }.bind(this)); // Bind 'this' to ensure 'this.map' is accessible
-
-            console.log('Adding home markers');
-
-            // Add home markers
-            document.querySelectorAll('span[data-home-id]').forEach(function(element) {
-                console.log('Processing homes');
-                if (element.getAttribute('rendered') !== 'true') {
-                    const lat = parseFloat(element.getAttribute('data-lat'));
-                    const lng = parseFloat(element.getAttribute('data-lng'));
-                    const homeId = element.getAttribute('data-home-id');
-                    const pointKind = element.getAttribute('data-point-kind');
-
-                    window.mapActor.addMarker(lat, lng, { homeId, pointKind })
-                    // Add the marker to the 'homes' layer group
-                    /*L.marker([lat, lng])
-                        .addTo(overlayMaps.homes)
-                        ;*/
-
-                    element.setAttribute('rendered', 'true');
-                }
-            });
-        }
-
-        // Initialize map and process shapes and homes
-            processShapesAndHomes();
     </script>
      for _, h := range homes {
         @homeShape(h)
