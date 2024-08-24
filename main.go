@@ -1,14 +1,20 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/png"
+	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/nfnt/resize"
 	"gorm.io/gorm"
 )
 
@@ -25,12 +31,39 @@ func startServer(r *chi.Mux, portStr string) {
 	log.Printf("Starting server on %s", portStr)
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Could not listen on %s: %v\n", portStr, err)
+	} else {
+		log.Printf("Server started on %s", portStr)
 	}
 }
 
+type EnvConfig struct {
+	DBUrl               string
+	HuggingFaceAPIToken string
+}
+
+func GetEnvConfig() EnvConfig {
+
+	config := EnvConfig{
+		DBUrl:               os.Getenv("DATABASE_URL"),
+		HuggingFaceAPIToken: os.Getenv("HUGGINGFACE_API_TOKEN"),
+	}
+
+	if len(config.DBUrl) == 0 {
+		log.Fatalf("DATABASE_URL not set")
+	}
+
+	if len(config.HuggingFaceAPIToken) == 0 {
+		log.Printf("HUGGINGFACE_API_TOKEN not set")
+	}
+	return config
+}
+
 func main() {
+
+	envConfig := GetEnvConfig()
+
 	// Initialize the database connection
-	db, err := DBInit()
+	db, err := DBInit(envConfig)
 	if err != nil {
 		log.Fatal("ERROR: failed to connect to database:", err)
 	}
@@ -38,19 +71,27 @@ func main() {
 	// Create a new router
 	r := chi.NewRouter()
 
+	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
+
 	// Define routes with method-specific handlers
 	r.Get("/shapes", shapeHandler(db))
 	r.Get("/shapes/{shapeId:[0-9]+}", specificShapeHandler(db))
 	r.Delete("/shapes/{shapeId:[0-9]+}", specificShapeHandler(db))
+
+	r.Get("/health", healthHandler())
 
 	r.Post("/shapes", shapeHandler(db))
 
 	r.Post("/homes-rating", createHomeFactorRating(db))
 	r.Post("/factors", createFactor(db))
 	r.Get("/homes/{homeId:[0-9]+}", singleHomeHandler(db))
+	r.Delete("/homes/{homeId:[0-9]+}", singleHomeHandler(db))
+
 	r.Get("/homes", homeHandler(db))
 	r.Post("/homes", homeHandler(db)) // Assuming POST for creating a home
 	r.Get("/", mapHandler(db))
+
+	r.Get("/process", mapProcessHandler(db, envConfig))
 
 	r.Get("/delete-all", deleteHandler(db))
 	r.Delete("/delete-all", deleteHandler(db))
@@ -102,16 +143,109 @@ func mapHandler(db *gorm.DB) http.HandlerFunc {
 				meta.Mode = mode
 			}
 
-			log.Printf("%+v", shapes)
+			log.Printf("home render: %+v", shapes)
 			mapComp := mapper(meta, homes, shapes)
 			mapComp.Render(GetContext(r), w)
+			log.Printf("home render done")
+
 			return
 		default:
+			log.Printf("home render WARNING")
+
 			warn := warning("Method not allowed")
 			warn.Render(GetContext(r), w)
 			return
 		}
+
 	}
+
+}
+
+func healthHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		success := success("Healthy")
+		success.Render(GetContext(r), w)
+	}
+}
+
+type MapRequest struct {
+	StartPoint [2]float64 `json:"start_point"` // [lat, lng]
+	Zoom       int        `json:"zoom"`
+	Width      int        `json:"width"`
+	Height     int        `json:"height"`
+}
+
+func mapProcessHandler(db *gorm.DB, envConfig EnvConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req MapRequest
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			warning := warning(fmt.Sprintf("Invalid request %+v", err))
+			warning.Render(GetContext(r), w)
+			return
+
+		}
+
+		// Process the map and generate an image
+		img := processMap(req.StartPoint, req.Zoom, req.Width, req.Height)
+
+		// Encode the image as PNG
+		var buf bytes.Buffer
+		if err := png.Encode(&buf, img); err != nil {
+			warning := warning(fmt.Sprintf("Error encoding image: %v", err))
+			warning.Render(GetContext(r), w)
+			return
+
+		}
+
+		// Post the image to Hugging Face API for feature classification
+		result, err := classifyImageWithHuggingFace(buf.Bytes(), envConfig)
+		if err != nil {
+			warning := warning(fmt.Sprintf("Error classifying image: %v", err))
+			warning.Render(GetContext(r), w)
+			return
+		}
+
+		// Log the save action (dummy save)
+		log.Println("Map image saved with location:", req.StartPoint)
+		success := success(fmt.Sprintf("Map image saved %+v", result))
+		success.Render(GetContext(r), w)
+		return
+		// Send the classification result back to the client
+		//	w.Header().Set("Content-Type", "application/json")
+		//	w.Write(result)
+	}
+}
+
+func classifyImageWithHuggingFace(imageData []byte, envConfig EnvConfig) ([]byte, error) {
+	// Prepare a multipart form request with the image
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, err := writer.CreateFormFile("file", "image.png")
+	if err != nil {
+		return nil, err
+	}
+	part.Write(imageData)
+	writer.Close()
+
+	const HuggingFaceAPIURL = "https://api-inference.huggingface.co/models/{model_name}"
+	// Make the request to Hugging Face API
+	req, err := http.NewRequest("POST", HuggingFaceAPIURL, &body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+envConfig.HuggingFaceAPIToken)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Read and return the response from Hugging Face API
+	return io.ReadAll(resp.Body)
 }
 
 func deleteHandler(db *gorm.DB) http.HandlerFunc {
@@ -191,16 +325,20 @@ func shapeHandler(db *gorm.DB) http.HandlerFunc {
 				areaShape := addShapeForm(shapeTypes)
 				areaShape.Render(GetContext(r), w)
 				return
-			}
-		case "all":
-			{
-				shapeTypes := GetShapeTypes(db)
-				shapes := GetShapes(db)
-				homes := GetHomes(db)
+			case "all":
+				{
+					shapeTypes := GetShapeTypes(db)
+					shapes := GetShapes(db)
+					homes := GetHomes(db)
 
-				shapeList := shapeList(shapes, shapeTypes, homes)
-				shapeList.Render(GetContext(r), w)
-
+					shapeList := shapeList(shapes, shapeTypes, homes)
+					shapeList.Render(GetContext(r), w)
+					return
+				}
+			default:
+				warn := warning("mode not allowed for shapeHandler")
+				warn.Render(GetContext(r), w)
+				return
 			}
 
 			shapes := GetShapes(db)
@@ -385,7 +523,9 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 			lat := r.URL.Query().Get("lat")
 			lng := r.URL.Query().Get("lng")
 
-			homeForm := homeForm(lat, lng)
+			pointMeta := GetPointMeta()
+
+			homeForm := homeForm(pointMeta, lat, lng, "")
 			homeForm.Render(GetContext(r), w)
 			return
 
@@ -427,13 +567,15 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 			// Convert latitude and longitude to float64
 			lat, err := strconv.ParseFloat(latStr, 64)
 			if err != nil {
-				http.Error(w, "Invalid latitude value", http.StatusBadRequest)
+				warning := warning("Invalid latitude value")
+				warning.Render(GetContext(r), w)
 				return
 			}
 
 			lng, err := strconv.ParseFloat(lngStr, 64)
 			if err != nil {
-				http.Error(w, "Invalid longitude value", http.StatusBadRequest)
+				warning := warning("Invalid longitude value")
+				warning.Render(GetContext(r), w)
 				return
 			}
 
@@ -482,4 +624,39 @@ func createHomeFactorRating(db *gorm.DB) http.HandlerFunc {
 		db.Create(&rating)
 		json.NewEncoder(w).Encode(rating)
 	}
+}
+
+func parseQueryFloat(value string) float64 {
+	if value == "" {
+		return 0.0
+	}
+	parsedValue, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return 0.0
+	}
+	return parsedValue
+}
+
+func parseQueryInt(value string) int {
+	if value == "" {
+		return 0
+	}
+	parsedValue, err := strconv.Atoi(value)
+	if err != nil {
+		return 0
+	}
+	return parsedValue
+}
+
+func processMap(startPoint [2]float64, zoom, width, height int) image.Image {
+	// Logic for initializing the map (using Leaflet in JS frontend)
+	// This is a placeholder where the JS frontend will navigate the map.
+
+	// Create a dummy map image for the example (replace with real map generation logic)
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+
+	// Optionally resize the image to match the desired dimensions
+	resizedImg := resize.Resize(uint(width), uint(height), img, resize.Lanczos3)
+
+	return resizedImg
 }

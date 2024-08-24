@@ -48,7 +48,7 @@ templ addShapeForm(meta ShapeMeta){
 }
 
 templ editShapeForm(shape Shape, meta ShapeMeta, msg string){
-     <form hx-post="/shapes?updateMode=create-area" hx-target="this">
+     <form hx-post="/shapes?updateMode=create-area" class="w-10" hx-target="this">
         if len(msg) > 0 {
             @success(msg)
         }
@@ -80,14 +80,21 @@ templ editShapeForm(shape Shape, meta ShapeMeta, msg string){
 }
 
 templ shapeList(shapes []Shape, shapeMeta ShapeMeta, homes []Home){
+    <script>
+        const map = document.getElementById('map')
+        
+    </script>
+
      for _, h := range homes {
         @homeShape(h)
     }
+    
     for _, s := range shapes {
         switch s.ShapeType {
             case "area":
                 @areaShape(s)
             default:
+                console.info("shape type not supported")
                 @warning(fmt.Sprintf("shape ShapeType not valid (%s) on %+v", s.ShapeType, s))
             
         }
@@ -95,20 +102,16 @@ templ shapeList(shapes []Shape, shapeMeta ShapeMeta, homes []Home){
 }
 
 templ areaShape(shape Shape){
-    <tr
-        data-id={ fmt.Sprintf("s-%v", shape.ID) }
-        data-geometry-type="Polygon"
-        data-geometry={ shape.ShapeData}
-        data-popup={fmt.Sprintf("<div hx-get=\"/shapes/%d\" hx-trigger=\"revealed\">loading..</div>", shape.ID)}
-        data-color="red"
-    ></tr>
+    <script data-shape-data={ templ.JSONString(shape.ShapeData) } data-shape-id={ fmt.Sprintf("%d", shape.ID)}  data-shape-kind={ shape.ShapeKind }>
+
+        window.mapActor.addPolygon(JSON.parse(document.currentScript.getAttribute('data-shape-data')), { shapeKind: document.currentScript.getAttribute('data-shape-kind'), shapeId: document.currentScript.getAttribute('data-shape-id') }, window.mapActor.editAreaPopupOptions)
+    </script>
 }
 
 templ homeShape(h Home){
-    <tr
-        data-id={fmt.Sprintf("h-%v", h.ID)}
-        data-geometry-type="Point"
-        data-geometry={ fmt.Sprintf("[%f, %f]", h.Lat, h.Lng)}
-        data-popup={fmt.Sprintf("<div hx-get=\"/homes/%d\" hx-trigger=\"revealed\" ></div>", h.ID)}
-    ></tr>
+    <script data-lat={fmt.Sprintf("%f", h.Lat)} data-lng={fmt.Sprintf("%f", h.Lng)} data-home-id={fmt.Sprintf("%d", h.ID)}>
+            window.leaflet.marker([parseFloat(document.currentScript.getAttribute('data-lat')), parseFloat(document.currentScript.getAttribute('data-lng'))])
+            .addTo(myMap)
+            .bindPopup(`<div hx-get="/homes/${document.currentScript.getAttribute('data-home-id')}" hx-trigger="revealed"></div>`, window.mapActor.editPointPopupOptions)
+    </script>
 }

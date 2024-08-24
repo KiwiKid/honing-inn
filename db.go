@@ -2,23 +2,15 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 // DBInit initializes the database and creates the tables
-func DBInit() (*gorm.DB, error) {
+func DBInit(config EnvConfig) (*gorm.DB, error) {
 
-	log.Printf("DBInit -- DATABASE_URL: %s", os.Getenv("DATABASE_URL"))
-
-	dbUrl := os.Getenv("DATABASE_URL")
-	if len(dbUrl) == 0 {
-		log.Panic("No DATABASE_URL set")
-	}
-
-	db, err := gorm.Open(sqlite.Open(dbUrl), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(config.DBUrl), &gorm.Config{})
 	if err != nil {
 		log.Fatal("failed to connect database:", err)
 	}

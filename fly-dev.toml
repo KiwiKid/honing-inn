@@ -1,4 +1,4 @@
-app = 'honing-in'
+app = 'honing-in-preview'
 primary_region = 'syd'
 
 [build]

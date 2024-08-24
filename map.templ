@@ -26,7 +26,8 @@ templ mapper(meta MapMeta, homes []Home, shapes []Shape) {
             ></script>
 
     </head>
-    <body >
+    <body>
+        <!--<script src="./static/mapActor.js"></script>-->
 
     <style>
     #map {
@@ -76,255 +77,62 @@ padding: 10px;
     
 }
 
+
+/* Basic form input styles */
+input, textarea, select, button {
+  padding: 0.75rem 1rem; /* Increase padding */
+  font-size: 1rem; /* Slightly larger font */
+  border-radius: 0.375rem; /* Tailwind's rounded-md equivalent */
+  border: 1px solid #d1d5db; /* Light border */
+  background-color: #f9fafb; /* Light background */
+  transition: border-color 0.2s ease, box-shadow 0.2s ease; /* Smooth transitions */
+}
+
+/* Focus state for better accessibility */
+input:focus, textarea:focus, select:focus, button:focus {
+  outline: none;
+  border-color: #3b82f6; /* Tailwind blue-500 */
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5); /* Focus shadow */
+}
+
+/* Basic button styles */
+button {
+  background-color: #3b82f6; /* Tailwind blue-500 */
+  color: white;
+  transition: background-color 0.2s ease;
+}
+
+/* Button hover state */
+button:hover {
+  background-color: #2563eb; /* Darker blue */
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 640px) {
+  input, textarea, select, button {
+    width: 100%; /* Full width on small screens */
+  }
+}
+
+
     </style>
      <div id="map" class="map" data-center={ fmt.Sprintf("[%f, %f]", meta.Lat, meta.Lng) } data-zoom={ fmt.Sprintf("%d", meta.Zoom)}>
         <div data-tile="EsriWorldImagery" data-max-zoom="19" data-min-zoom="5" data-default></div>
             <div data-tile="OpenStreetMap"></div>
-            <table id="map-container" data-hyperleaflet-source >
-                for _, h := range homes {
-                    @homeShape(h)
-                }
-                for _, s := range shapes {
-                    switch s.ShapeType {
-                        case "area":
-                           @areaShape(s)
-                        default:
-                            @warning(fmt.Sprintf("shape ShapeType not valid (%s) on %+v", s.ShapeType, s))
-                        
-                    }
-                }
+            <table id="map-container" >
+               
                 <div id="info" class="leaflet-bar leaflet-control infobox" >
                     
                     <span class=" zoom-level" id="zoom-level"></span>
 
                 </div>               
+                <div hx-get="/shapes?mode=all" hx-trigger="revealed">loading shapes..</div>
                
             </table>
             
         </div>
 
-     <script src="https://unpkg.com/hyperleaflet@0.4.4"></script>
-    <script>
-    function startArea(lat, lng){
-        setMode('area')
-        console.log(`startArea ${lat} ${lng}`)
-    }
+    <script src="/static/mapActor.js" type="text/javascript" />
 
-    function debounce(func, wait) {
-        let timeout;
-        return function (...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
-    }
-
-    // Function to update the URL query
-    function updateUrlQuery(details) {
-        console.log(`updateUrlQuery ${JSON.stringify(details)}`)
-        const queryString = new URLSearchParams(details).toString();
-        console.log(`updateUrlQuery >>>>>  ${queryString}`)
-
-        history.pushState(null, '', `?${queryString}`);
-    }
-
-    function addQueryParam(name, value) {
-
-        const queryString = new URLSearchParams(window.location.search);
-        queryString.set(name, value);
-
-        const url = queryString.toString();  // Fixed the typo
-        history.pushState(null, '', `?${url}`);
-    }
-
-    const debouncedUpdateUrlQuery = debounce(updateUrlQuery, 300);
-    
-    function highlightElement(element) {
-        // Apply the highlight styles
-        element.style.border = '5px solid yellow';
-        
-        // Start fading out the border after a delay (e.g., 2 seconds)
-        setTimeout(() => {
-            element.style.transition = 'border 2s ease-out';
-            element.style.border = '0 solid transparent';
-            
-            // Optionally, reset the transition after it's done for repeatability
-            setTimeout(() => {
-            element.style.transition = '';
-            }, 2000);  // Match the fade-out duration
-        }, 2000);  // Duration of the highlight before fading out
-    }
-
-     // Define the custom control
-    const CustomControl = L.Control.extend({
-        options: {
-            position: 'topright'
-        },
-
-        onAdd: function(map) {
-            // Create a div element with the 'custom-control' class
-            const controlDiv = L.DomUtil.create('div', 'custom-control');
-
-            // Add content to the control
-            controlDiv.innerHTML = `<div class="tools" click="(e) => e.stopPropagation()" >
-            <select id="mode" class="modeset" name="mode" click="(e) => e.stopPropagation()" >
-                        <option value="---">---</option>
-                        <option value="point">Create Points</option>
-                        <option value="area">Create Areas</option>
-                    </select>
-            </div>
-            `;
-
-            const modeSetting = new URLSearchParams(window.location.search)
-            const select = controlDiv.firstChild
-            select.value = modeSetting.get('mode')
-
-            select.addEventListener('change', (elm) => {
-                addQueryParam('mode', elm.target.value)
-            })
-
-            
-
-            return controlDiv;
-        },
-
-        onRemove: function(map) {
-            // Nothing to clean up when the control is removed
-        }
-    });
-
-    var maps = [];
-
-    L.Map.addInitHook(function () {
-        if(maps.length == 0){
-            maps.push(this);
-        }
-        
-
-        this.on('popupopen', function(e) {
-            const popups = document.querySelectorAll(".leaflet-popup-content-wrapper")
-            popups.forEach((p) => {
-                htmx.process(p)
-            })
-        });
-
-      /*  this.on('moveend', function(e){
-                console.log('moveend')
-        })
-        this.on('move', function(e){
-                console.log('move')
-        })*/
-
-        this.on('moveend', function(e){
-            const mode = document.getElementById('mode')
-            console.log(e)
-            debouncedUpdateUrlQuery({
-                zoom: maps[0]._zoom,
-                lat: maps[0].options.center[0],
-                lng: maps[0].options.center[1],
-                mode: mode.value,
-            });
-        })
-
-        this.on('map:zoonend', function(e){
-            const mode = document.getElementById('mode')
-            debouncedUpdateUrlQuery({
-                zoom: maps[0]._zoom,
-                lat: maps[0].options.center[0],
-                lng: maps[0].options.center[1],
-                mode: mode.value
-            });
-        })
-
-        this.addControl(new CustomControl());
-
-    });
-
-
-    // Add the custom control to the map
-
-
-      const info = document.querySelector("#info");
-
-      const setMode = function(mode){
-            console.log(`setMode ${mode}`)
-            mode.value = mode
-      }
-
-      window.addEventListener('map:click', (event) => {
-        const { point } = event.detail;
-        
-        if(event.target.name === "mode"){
-            console.log('non-map click')
-            console.log(event)
-            return    
-        }else {
-            console.log('map click')
-            console.log(event)
-        }
-
-        
-        const map = document.getElementById('map')
-        let mode = document.getElementById('mode')
-
-        switch(mode.value){
-            case 'point':{
-                const popup = `<div class="new-popup" hx-target="this">
-                    <form hx-post="/homes">
-                        <input type="hidden" name="lat" value="${point.lat}"></input>
-                        <input type="hidden" name="lng" value="${point.lng}"></input>
-                        <button type="submit">Create Point</button>
-                        <button onclick="location.reload();">cancel</button>
-                    </form>
-                 </div>`
-
-                const marker = window.leaflet.marker([point.lat, point.lng]).addTo(maps[0])
-                    .bindPopup(popup)
-                    .openPopup();
-
-                const popups = document.querySelectorAll(".new-popup")
-                popups.forEach((p) => {
-                    htmx.process(p)
-                })
-                break;
-            }
-            case 'area':{
-
-                if(!window.existingNewAreaPoints){
-                    window.existingNewAreaPoints = [[point.lat, point.lng]]
-                    const polyGon = window.leaflet.polygon(window.existingNewAreaPoints, {color: 'red'}).addTo(maps[0]);        
-                    window.existingNewArea = polyGon  
-                }else {
-                    window.existingNewAreaPoints = [...window.existingNewAreaPoints, [point.lat, point.lng]]
-                    if(window.existingNewArea){
-                     //   window.existingNewArea.remove()           
-                    }
-                    
-                  /*  const popup = `<div class="new-popup" hx-target="this">
-                    <form hx-post="/shapes?updateMode=create-area">
-                        <input type="hidden" name="latlngs" value="${JSON.stringify(window.existingNewAreaPoints)}"></input>
-                        <button type="submit">Save Area</button>
-                    </form>`*/
-
-                        const popup = `<div hx-get="/shapes?mode=area" hx-trigger="revealed">loading..</div>`
-                        
-                    window.leaflet.polygon(window.existingNewAreaPoints, {color: 'red'}).bindPopup(popup).openPopup().addTo(maps[0]);
-                }
-                break;
-            }
-            case '---': {
-                highlightElement(document.getElementById('mode'))
-            }
-            default: {
-                console.error(`mode  "${mode.value}" not found`)
-            }
-        }
-
-
-       
-            
-            
-        });
-    </script>
-   
     </body>
 }
