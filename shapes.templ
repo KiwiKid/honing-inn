@@ -80,11 +80,63 @@ templ editShapeForm(shape Shape, meta ShapeMeta, msg string){
 }
 
 templ shapeList(shapes []Shape, shapeMeta ShapeMeta, homes []Home){
-    <script>
-        const map = document.getElementById('map')
+   
+ <script>
+    
+        console.log('shape list js')
         
-    </script>
 
+        // Function to collect and process shapes and homes
+        function processShapesAndHomes() {
+
+            console.log('shape list js - processShapesAndHomes')
+            // Group shapes into layers
+            window.shapeLayers = {};
+
+                console.log(' Add home markers')
+
+           document.querySelectorAll('span[data-shape-id]').forEach(function(element) {
+                console.log('Processing shapes');
+                if (element.getAttribute('rendered') !== 'true') {
+                    const shapeData = JSON.parse(element.getAttribute('data-shape-data'));
+                    const shapeId = element.getAttribute('data-shape-id');
+                    const shapeKind = element.getAttribute('data-shape-kind');
+
+                    // Get the corresponding layer group for the shape kind
+              
+                    // Add the polygon to the layer group
+                    window.mapActor.addPolygon(shapeData, { shapeKind: shapeKind, shapeId: shapeId }, window.mapActor.editAreaPopupOptions)
+                       
+
+                    element.setAttribute('rendered', 'true');
+                }
+            }.bind(this)); // Bind 'this' to ensure 'this.map' is accessible
+
+            console.log('Adding home markers');
+
+            // Add home markers
+            document.querySelectorAll('span[data-home-id]').forEach(function(element) {
+                console.log('Processing homes');
+                if (element.getAttribute('rendered') !== 'true') {
+                    const lat = parseFloat(element.getAttribute('data-lat'));
+                    const lng = parseFloat(element.getAttribute('data-lng'));
+                    const homeId = element.getAttribute('data-home-id');
+                    const pointKind = element.getAttribute('data-point-kind');
+
+                    window.mapActor.addMarker(lat, lng, { homeId, pointKind })
+                    // Add the marker to the 'homes' layer group
+                    /*L.marker([lat, lng])
+                        .addTo(overlayMaps.homes)
+                        ;*/
+
+                    element.setAttribute('rendered', 'true');
+                }
+            });
+        }
+
+        // Initialize map and process shapes and homes
+            processShapesAndHomes();
+    </script>
      for _, h := range homes {
         @homeShape(h)
     }
@@ -92,6 +144,7 @@ templ shapeList(shapes []Shape, shapeMeta ShapeMeta, homes []Home){
     for _, s := range shapes {
         switch s.ShapeType {
             case "area":
+                
                 @areaShape(s)
             default:
                 console.info("shape type not supported")
@@ -99,19 +152,23 @@ templ shapeList(shapes []Shape, shapeMeta ShapeMeta, homes []Home){
             
         }
     }
+
+   
+
+}
+templ areaShape(shape Shape) {
+    <span 
+        data-shape-data={ templ.JSONString(shape.ShapeData) } 
+        data-shape-id={ fmt.Sprintf("%d", shape.ID) }  
+        data-shape-kind={ shape.ShapeKind }>
+    </span>
 }
 
-templ areaShape(shape Shape){
-    <script data-shape-data={ templ.JSONString(shape.ShapeData) } data-shape-id={ fmt.Sprintf("%d", shape.ID)}  data-shape-kind={ shape.ShapeKind }>
-
-        window.mapActor.addPolygon(JSON.parse(document.currentScript.getAttribute('data-shape-data')), { shapeKind: document.currentScript.getAttribute('data-shape-kind'), shapeId: document.currentScript.getAttribute('data-shape-id') }, window.mapActor.editAreaPopupOptions)
-    </script>
-}
-
-templ homeShape(h Home){
-    <script data-lat={fmt.Sprintf("%f", h.Lat)} data-lng={fmt.Sprintf("%f", h.Lng)} data-home-id={fmt.Sprintf("%d", h.ID)}>
-            window.leaflet.marker([parseFloat(document.currentScript.getAttribute('data-lat')), parseFloat(document.currentScript.getAttribute('data-lng'))])
-            .addTo(myMap)
-            .bindPopup(`<div hx-get="/homes/${document.currentScript.getAttribute('data-home-id')}" hx-trigger="revealed"></div>`, window.mapActor.editPointPopupOptions)
-    </script>
+templ homeShape(h Home) {
+    <span 
+        data-lat={ fmt.Sprintf("%f", h.Lat) } 
+        data-lng={ fmt.Sprintf("%f", h.Lng) } 
+        data-home-id={ fmt.Sprintf("%d", h.ID) } 
+        data-point-kind={ h.PointType }>
+    </span>
 }

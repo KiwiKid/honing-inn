@@ -397,7 +397,7 @@ func shapeList(shapes []Shape, shapeMeta ShapeMeta, homes []Home) templ.Componen
 			templ_7745c5c3_Var18 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<script>\n        const map = document.getElementById('map')\n        \n    </script>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<script>\n    \n        console.log('shape list js')\n        \n\n        // Function to collect and process shapes and homes\n        function processShapesAndHomes() {\n\n            console.log('shape list js - processShapesAndHomes')\n            // Group shapes into layers\n            window.shapeLayers = {};\n\n                console.log(' Add home markers')\n\n           document.querySelectorAll('span[data-shape-id]').forEach(function(element) {\n                console.log('Processing shapes');\n                if (element.getAttribute('rendered') !== 'true') {\n                    const shapeData = JSON.parse(element.getAttribute('data-shape-data'));\n                    const shapeId = element.getAttribute('data-shape-id');\n                    const shapeKind = element.getAttribute('data-shape-kind');\n\n                    // Get the corresponding layer group for the shape kind\n              \n                    // Add the polygon to the layer group\n                    window.mapActor.addPolygon(shapeData, { shapeKind: shapeKind, shapeId: shapeId }, window.mapActor.editAreaPopupOptions)\n                       \n\n                    element.setAttribute('rendered', 'true');\n                }\n            }.bind(this)); // Bind 'this' to ensure 'this.map' is accessible\n\n            console.log('Adding home markers');\n\n            // Add home markers\n            document.querySelectorAll('span[data-home-id]').forEach(function(element) {\n                console.log('Processing homes');\n                if (element.getAttribute('rendered') !== 'true') {\n                    const lat = parseFloat(element.getAttribute('data-lat'));\n                    const lng = parseFloat(element.getAttribute('data-lng'));\n                    const homeId = element.getAttribute('data-home-id');\n                    const pointKind = element.getAttribute('data-point-kind');\n\n                    window.mapActor.addMarker(lat, lng, { homeId, pointKind })\n                    // Add the marker to the 'homes' layer group\n                    /*L.marker([lat, lng])\n                        .addTo(overlayMaps.homes)\n                        ;*/\n\n                    element.setAttribute('rendered', 'true');\n                }\n            });\n        }\n\n        // Initialize map and process shapes and homes\n            processShapesAndHomes();\n    </script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -447,14 +447,14 @@ func areaShape(shape Shape) templ.Component {
 			templ_7745c5c3_Var19 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<script data-shape-data=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<span data-shape-data=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var20 string
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(templ.JSONString(shape.ShapeData))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `shapes.templ`, Line: 105, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `shapes.templ`, Line: 161, Col: 59}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
@@ -467,7 +467,7 @@ func areaShape(shape Shape) templ.Component {
 		var templ_7745c5c3_Var21 string
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", shape.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `shapes.templ`, Line: 105, Col: 109}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `shapes.templ`, Line: 162, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
@@ -480,13 +480,13 @@ func areaShape(shape Shape) templ.Component {
 		var templ_7745c5c3_Var22 string
 		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(shape.ShapeKind)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `shapes.templ`, Line: 105, Col: 145}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `shapes.templ`, Line: 163, Col: 41}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\">\n\n        window.mapActor.addPolygon(JSON.parse(document.currentScript.getAttribute('data-shape-data')), { shapeKind: document.currentScript.getAttribute('data-shape-kind'), shapeId: document.currentScript.getAttribute('data-shape-id') }, window.mapActor.editAreaPopupOptions)\n    </script>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -512,14 +512,14 @@ func homeShape(h Home) templ.Component {
 			templ_7745c5c3_Var23 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<script data-lat=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<span data-lat=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var24 string
 		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%f", h.Lat))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `shapes.templ`, Line: 112, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `shapes.templ`, Line: 169, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 		if templ_7745c5c3_Err != nil {
@@ -532,7 +532,7 @@ func homeShape(h Home) templ.Component {
 		var templ_7745c5c3_Var25 string
 		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%f", h.Lng))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `shapes.templ`, Line: 112, Col: 82}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `shapes.templ`, Line: 170, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 		if templ_7745c5c3_Err != nil {
@@ -545,13 +545,26 @@ func homeShape(h Home) templ.Component {
 		var templ_7745c5c3_Var26 string
 		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", h.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `shapes.templ`, Line: 112, Col: 121}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `shapes.templ`, Line: 171, Col: 46}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\">\n            window.leaflet.marker([parseFloat(document.currentScript.getAttribute('data-lat')), parseFloat(document.currentScript.getAttribute('data-lng'))])\n            .addTo(myMap)\n            .bindPopup(`<div hx-get=\"/homes/${document.currentScript.getAttribute('data-home-id')}\" hx-trigger=\"revealed\"></div>`, window.mapActor.editPointPopupOptions)\n    </script>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" data-point-kind=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var27 string
+		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(h.PointType)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `shapes.templ`, Line: 172, Col: 37}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

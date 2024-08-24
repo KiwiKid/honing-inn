@@ -8,10 +8,17 @@ primary_region = 'syd'
 
 [build]
 
+[build.args]
+  BP_KEEP_FILES = "static/*"
+
 [env]
   PORT = '8080'
   DATABASE_URL = "/mnt/volume/data.db"
-  
+
+[[statics]]
+  guest_path = "/static"
+  url_prefix = "/static"
+
 [http_service]
   internal_port = 8080
   force_https = true
