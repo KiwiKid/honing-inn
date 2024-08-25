@@ -81,12 +81,7 @@ templ editShapeForm(shape Shape, meta ShapeMeta, msg string){
 
 templ shapeList(shapes []Shape, shapeMeta ShapeMeta, homes []Home){
    
- <script>
-    
-        console.log('shape list js')
-        
-
-    </script>
+ 
      for _, h := range homes {
         @homeShape(h)
     }
@@ -102,7 +97,12 @@ templ shapeList(shapes []Shape, shapeMeta ShapeMeta, homes []Home){
             
         }
     }
-
+    <script>
+    
+        console.log('shape list js')
+        
+       // window.mapActor.processShapesAndHomes()
+    </script>
    
 
 }
@@ -115,7 +115,7 @@ templ areaShape(shape Shape) {
 }
 
 templ homeShape(h Home) {
-    <span 
+    <span data-home={ templ.JSONString(h) }
         data-lat={ fmt.Sprintf("%f", h.Lat) } 
         data-lng={ fmt.Sprintf("%f", h.Lng) } 
         data-home-id={ fmt.Sprintf("%d", h.ID) } 

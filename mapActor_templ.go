@@ -36,8 +36,8 @@ func span() templ.Component {
 
 func mapActor() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_mapActor_ddb2`,
-		Function: `function __templ_mapActor_ddb2(){/**
+		Name: `__templ_mapActor_3bf6`,
+		Function: `function __templ_mapActor_3bf6(){/**
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Map} L 
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Marker} L.Marker
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').LatLng} L.LatLng
@@ -140,7 +140,37 @@ class mapActor {
         window.myMap = this.map;
         window.mapActor = this;
         const mapProcessingMeta = JSON.parse(document.getElementById(this.mapContainerId).getAttribute('data-processing-meta'))
+
+        const ProcessResults = L.Control.extend({
+            options: {
+                position: 'topright'
+            },
+
+            onAdd: function(map) {
+                // Create a div element with the 'custom-control' class
+                const controlDiv = L.DomUtil.create('div', 'custom-control');
+
+                // Add content to the control
+                controlDiv.innerHTML = ` + "`" + `<div id="images">
+                </div>
+                ` + "`" + `;
+
+
+                
+
+                return controlDiv;
+            },
+
+            onRemove: function(map) {
+                // Nothing to clean up when the control is removed
+            }
+        });
+
+
+        this.map.addControl(new ProcessResults());
+
         this.handleMapProcessing(mapProcessingMeta)
+
         return
       }
       
@@ -416,7 +446,7 @@ handleMapMoveEnd(e){
             iconSize: [24, 24] // Adjust the size as needed
         });
           options.icon = houseIcon
-          const marker = L.marker([lat, lng], options).bindPopup(` + "`" + `<div hx-get="/homes${options.homeId ? ` + "`" + `/${options.homeId}` + "`" + ` :'' }" hx-trigger="revealed"></div>` + "`" + `, window.mapActor.editPointPopupOptions)
+          const marker = L.marker([lat, lng], options).bindPopup(` + "`" + `<div hx-get="/homes${options.homeId ? ` + "`" + `/${options.homeId}` + "`" + ` :'' }?viewMode=view" hx-trigger="revealed"></div>` + "`" + `, window.mapActor.editPointPopupOptions)
 
           overlayMaps.homes.addLayer(marker)
           overlayMaps.homes.addTo(this.map)
@@ -541,16 +571,14 @@ handleMapMoveEnd(e){
           document.querySelectorAll('span[data-home-id]').forEach(function(element) {
               console.log('Processing homes');
               if (element.getAttribute('rendered') !== 'true') {
-                  const lat = parseFloat(element.getAttribute('data-lat'));
-                  const lng = parseFloat(element.getAttribute('data-lng'));
-                  const homeId = element.getAttribute('data-home-id');
-                  const pointKind = element.getAttribute('data-point-kind');
+                  const home = JSON.parse(element.getAttribute('data-home'))
+                  console.log(home)
+                  const lat = home.Lat;
+                  const lng = home.Lng;
+                  const homeId = home.ID;
+                  const pointKind = home.PointType || "Home"
 
                   window.mapActor.addMarker(lat, lng, { homeId, pointKind })
-                  // Add the marker to the 'homes' layer group
-                  /*L.marker([lat, lng])
-                      .addTo(overlayMaps.homes)
-                      ;*/
 
                   element.setAttribute('rendered', 'true');
               }
@@ -582,7 +610,7 @@ handleMapMoveEnd(e){
               image_data: imageData,  // Base64 encoded image data
             };
 
-            
+            console.log(` + "`" + `FETCH /process ${JSON.stringify(payload)}` + "`" + `)
             fetch('/process', {
               method: 'POST',
               headers: {
@@ -594,14 +622,13 @@ handleMapMoveEnd(e){
                 if (!response.ok) {
                   throw new Error('Network response was not ok');
                 }
-                htmx.process(response.body()) // Parse the JSON from the response
+                console.log(` + "`" + `processed OK ${JSON.stringify(response.body, null, 4)}` + "`" + `)
               })
               .then(data => {
                 console.log(` + "`" + `Processed row ${currentRow}, col ${currentCol}: ` + "`" + `, data);
                 moveToNextCell();
               })
               .catch(error => {
-                htmx.process(response.body()) // Parse the JSON from the response
 
                 console.error(` + "`" + `Error processing row ${currentRow}, col ${currentCol}: ` + "`" + `, error);
               });
@@ -659,7 +686,7 @@ handleMapMoveEnd(e){
             resolve(base64data);  // Resolve with base64 encoded image
 
             var img = document.createElement('img');
-            var dimensions = this.map.getSize();
+            var dimensions = window.myMap.getSize();
             img.width = dimensions.x;
             img.height = dimensions.y;
             img.src = canvas.toDataURL();
@@ -783,19 +810,6 @@ handleMapMoveEnd(e){
     });*/
 
 
-//ocument.addEventListener("DOMContentLoaded", function() {
-      // Create an instance of mapActor and initialize the map
-
-            
-
-      // Clear markers and polygons (when needed)
-      // mapController.clearMarkers();
-      // mapController.clearPolygons();
-  //  });
-
-
-    // Add the custom control to the map
-
 
       const info = document.querySelector("#info");
 
@@ -807,7 +821,7 @@ handleMapMoveEnd(e){
 
       
 }`,
-		Call:       templ.SafeScript(`__templ_mapActor_ddb2`),
-		CallInline: templ.SafeScriptInline(`__templ_mapActor_ddb2`),
+		Call:       templ.SafeScript(`__templ_mapActor_3bf6`),
+		CallInline: templ.SafeScriptInline(`__templ_mapActor_3bf6`),
 	}
 }

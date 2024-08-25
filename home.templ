@@ -4,8 +4,51 @@ import (
     "fmt"
 )
 
+templ homeView(home Home, msg string, pointMeta PointMeta) {
+    <div class="space-y-4">
+        <!-- Display message -->
+         if len(msg) > 0 {
+            <div class="text-red-500">{ msg }</div>
+        }
+
+        <div>
+            <div class="text-sm font-medium text-gray-700">Title:</div>
+            <div class="text-gray-900">{ home.Title }</div>
+        </div>
+
+        <div>
+            <div class="text-sm font-medium text-gray-700">URL:</div>
+            <div class="text-gray-900">{ home.Url }</div>
+        </div>
+
+        <div>
+            <div class="text-sm font-medium text-gray-700">Notes:</div>
+            <div class="text-gray-900">{ home.Notes }</div>
+        </div>
+
+        <div>
+            <div class="text-sm font-medium text-gray-700">Point Type:</div>
+            <div class="text-gray-900">
+                {  home.PointType }
+            </div>
+        </div>
+
+        <div>
+            <div class="text-sm font-medium text-gray-700">Location:</div>
+            <div class="text-gray-500">
+                { fmt.Sprintf("[%v, %v]", home.Lat, home.Lng) }
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div>
+            <button hx-get={ fmt.Sprintf("/homes/%d?viewMode=edit", home.ID) } class="btn-edit">Edit</button>
+        </div>
+    </div>
+}
+
 templ homeForm(pointMeta PointMeta, lat string, lng string, msg string){
-   <form hx-post="/homes" class="space-y-4">
+   <form hx-post="/homes?viewMode=edit" class="space-y-4">
     if len(msg) > 0 {
         <div class="text-red-500">{ msg }</div>
     }
@@ -54,7 +97,7 @@ templ homeForm(pointMeta PointMeta, lat string, lng string, msg string){
 
 }
 templ homeEditForm(home Home, msg string, pointMeta PointMeta){
-    <form hx-post="/homes" class="space-y-4">
+    <form hx-post="/homes?viewMode=view" class="space-y-4">
         if len(msg) > 0 {
             <div class="text-red-500">{msg}</div>
         }

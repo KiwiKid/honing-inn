@@ -236,8 +236,7 @@ func mapProcessHandler(db *gorm.DB, envConfig EnvConfig) http.HandlerFunc {
 		var req MapRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			warning := warning(fmt.Sprintf("Invalid payload %+v", err))
-			warning.Render(GetContext(r), w)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		log.Printf("MAP PROCESS HANDLER %+v", req)
@@ -245,14 +244,19 @@ func mapProcessHandler(db *gorm.DB, envConfig EnvConfig) http.HandlerFunc {
 		// Pass the image data to the processor
 		result, err := classifyImageWithHuggingFace(req, envConfig)
 		if err != nil {
-			warning := warning(fmt.Sprintf("Error classifying image: %+v", err))
-			warning.Render(GetContext(r), w)
+			warning := fmt.Sprintf("Error classifying image: %+v", err)
+			log.Printf(warning)
+
+			http.Error(w, warning, http.StatusInternalServerError)
 			return
 		}
 
 		// Log the save action (dummy save)
-		success := success(fmt.Sprintf("FAKE FAKE FAKE MAP IMAGE saved %+v", result))
-		success.Render(GetContext(r), w)
+		log.Print(fmt.Sprintf("FAKE FAKE FAKE MAP IMAGE saved %+v", result))
+
+		http.ResponseWriter.Header(w).Set("Content-Type", "application/json")
+		http.ResponseWriter.Write(w, result)
+
 		return
 		// Send the classification result back to the client
 		//	w.Header().Set("Content-Type", "application/json")
@@ -540,8 +544,24 @@ func singleHomeHandler(db *gorm.DB) http.HandlerFunc {
 
 			pointMeta := GetPointMeta()
 
-			homeForm := homeEditForm(home, "", pointMeta)
-			homeForm.Render(GetContext(r), w)
+			viewMode := r.URL.Query().Get("viewMode")
+
+			log.Printf("\n\nviewviewviewview mode %s", viewMode)
+			switch viewMode {
+			case "view":
+				homeForm := homeView(home, "", pointMeta)
+				homeForm.Render(GetContext(r), w)
+				return
+			case "edit":
+				homeForm := homeEditForm(home, "", pointMeta)
+				homeForm.Render(GetContext(r), w)
+				return
+			default:
+				warn := warning("viewMode not allowed (edit,view)")
+				warn.Render(GetContext(r), w)
+				return
+			}
+
 			return
 		case "DELETE":
 			idStr := chi.URLParam(r, "homeId")
@@ -652,9 +672,24 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 
 			pointMeta := GetPointMeta()
 
-			homeForm := homeEditForm(home, msg, pointMeta)
-			homeForm.Render(GetContext(r), w)
-			return
+			viewMode := r.URL.Query().Get("viewMode")
+
+			log.Printf("\n\nviewviewviewview mode %s", viewMode)
+			switch viewMode {
+			case "view":
+				homeForm := homeView(home, msg, pointMeta)
+				homeForm.Render(GetContext(r), w)
+				return
+			case "edit":
+				homeForm := homeEditForm(home, msg, pointMeta)
+				homeForm.Render(GetContext(r), w)
+				return
+			default:
+				warn := warning("viewMode not allowed (edit,view)")
+				warn.Render(GetContext(r), w)
+				return
+			}
+
 		default:
 			warn := warning("Method not allowed")
 			warn.Render(GetContext(r), w)

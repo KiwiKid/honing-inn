@@ -28,7 +28,10 @@ func DBInit(config EnvConfig) (*gorm.DB, error) {
 
 func InitShapeTypes(db *gorm.DB) error {
 	// delete all existing shapes
-	//
+	err := db.Exec("DELETE FROM shape_types")
+	if err.Error != nil {
+		log.Fatal("failed to delete shape types:", err.Error)
+	}
 
 	shapes := []ShapeType{
 		{
@@ -47,8 +50,10 @@ func InitShapeTypes(db *gorm.DB) error {
 
 func InitShapeKinds(db *gorm.DB) error {
 	// delete all existing shapes
-	//db.Exec("DELETE FROM shape_kinds")
-
+	err := db.Exec("DELETE FROM shape_kinds")
+	if err.Error != nil {
+		log.Fatal("failed to delete shape_kinds:", err.Error)
+	}
 	shapes := []ShapeKind{
 		{
 			ID:   1,
