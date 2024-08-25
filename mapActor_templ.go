@@ -36,8 +36,8 @@ func span() templ.Component {
 
 func mapActor() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_mapActor_3bf6`,
-		Function: `function __templ_mapActor_3bf6(){/**
+		Name: `__templ_mapActor_f7a9`,
+		Function: `function __templ_mapActor_f7a9(){/**
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Map} L 
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Marker} L.Marker
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').LatLng} L.LatLng
@@ -68,7 +68,7 @@ class mapActor {
       
       this.createPopupOptions = {
         color: 'green',
-        minWidth: '300'
+        minWidth: '500'
       }
 
       this.createAreaPopupOptions = {
@@ -821,7 +821,7 @@ handleMapMoveEnd(e){
 
       
 }`,
-		Call:       templ.SafeScript(`__templ_mapActor_3bf6`),
-		CallInline: templ.SafeScriptInline(`__templ_mapActor_3bf6`),
+		Call:       templ.SafeScript(`__templ_mapActor_f7a9`),
+		CallInline: templ.SafeScriptInline(`__templ_mapActor_f7a9`),
 	}
 }

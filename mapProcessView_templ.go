@@ -46,7 +46,7 @@ func mapperProcessView(meta MapMeta, processingMeta MapProcessingMeta) templ.Com
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<body onload=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<body hx-indicator=\".loading-bar\" onload=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

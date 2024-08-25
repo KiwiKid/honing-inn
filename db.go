@@ -140,6 +140,16 @@ func GetShapeTypes(db *gorm.DB) ShapeMeta {
 	}
 }
 
+func GetFactors(db *gorm.DB) []Factor {
+	var factors []Factor
+	err := db.Find(&factors)
+	if err.Error != nil {
+		log.Printf("failed to get factors:", err.Error)
+		factors = []Factor{}
+	}
+	return factors
+}
+
 func CreateShape(db *gorm.DB, shape Shape) Shape {
 	err := db.Create(&shape)
 	if err.Error != nil {

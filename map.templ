@@ -8,7 +8,7 @@ templ mapper(meta MapMeta) {
     <head>
       @globalHeadLinks()
     </head>
-    <body onload={ mapActor() }>
+    <body hx-indicator=".loading-bar" onload={ mapActor() }>
 
     @globalStyles()
 

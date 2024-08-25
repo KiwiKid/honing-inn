@@ -30,7 +30,7 @@ func homeView(home Home, msg string, pointMeta PointMeta) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"space-y-4\"><!-- Display message -->")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"space-y-4\" hx-target=\"this\"><!-- Display message -->")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -66,27 +66,23 @@ func homeView(home Home, msg string, pointMeta PointMeta) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div></div><div><div class=\"text-sm font-medium text-gray-700\">URL:</div><div class=\"text-gray-900\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div></div><div><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var4 string
-		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(home.Url)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 21, Col: 49}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+		var templ_7745c5c3_Var4 templ.SafeURL = templ.SafeURL(home.Url)
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(string(templ_7745c5c3_Var4)))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div></div><div><div class=\"text-sm font-medium text-gray-700\">Notes:</div><div class=\"text-gray-900\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\">LINK</a></div><div><div class=\"text-sm font-medium text-gray-700\">Notes:</div><div class=\"text-gray-900\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(home.Notes)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 26, Col: 51}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 25, Col: 51}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -99,7 +95,7 @@ func homeView(home Home, msg string, pointMeta PointMeta) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(home.PointType)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 32, Col: 33}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 31, Col: 33}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -112,7 +108,7 @@ func homeView(home Home, msg string, pointMeta PointMeta) templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("[%v, %v]", home.Lat, home.Lng))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 39, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 38, Col: 61}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -125,7 +121,7 @@ func homeView(home Home, msg string, pointMeta PointMeta) templ.Component {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/homes/%d?viewMode=edit", home.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 45, Col: 76}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 44, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -157,7 +153,7 @@ func homeForm(pointMeta PointMeta, lat string, lng string, msg string) templ.Com
 			templ_7745c5c3_Var9 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<form hx-post=\"/homes?viewMode=edit\" class=\"space-y-4\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<form hx-post=\"/homes?viewMode=edit\" class=\"space-y-4\" hx-target=\"this\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -169,7 +165,7 @@ func homeForm(pointMeta PointMeta, lat string, lng string, msg string) templ.Com
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(msg)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 53, Col: 39}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 52, Col: 39}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -187,7 +183,7 @@ func homeForm(pointMeta PointMeta, lat string, lng string, msg string) templ.Com
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%v", lat))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 57, Col: 66}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 56, Col: 66}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
@@ -200,13 +196,13 @@ func homeForm(pointMeta PointMeta, lat string, lng string, msg string) templ.Com
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%v", lng))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 58, Col: 66}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 57, Col: 66}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><!-- Labeled input fields --><div><label for=\"title\" class=\"block text-sm font-medium text-gray-700\">Title</label> <input type=\"text\" name=\"title\" id=\"title\" class=\"form-input mt-1 block w-full\"></div><div><label for=\"url\" class=\"block text-sm font-medium text-gray-700\">URL</label> <input type=\"text\" name=\"url\" id=\"url\" class=\"form-input mt-1 block w-full\"></div><div><label for=\"notes\" class=\"block text-sm font-medium text-gray-700\">Notes</label> <input type=\"text\" name=\"notes\" id=\"notes\" class=\"form-input mt-1 block w-full\"></div><!-- Select dropdown --><div><label for=\"pointType\" class=\"block text-sm font-medium text-gray-700\">Point Type</label> <select name=\"pointType\" id=\"pointType\" class=\"form-input mt-1 block w-full\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><div><label for=\"url\" class=\"block text-sm font-medium text-gray-700\">URL</label> <input type=\"text\" required=\"required\" name=\"url\" id=\"url\" class=\"form-input mt-1 block w-full\"></div><!-- Select dropdown --><div><label for=\"pointType\" class=\"block text-sm font-medium text-gray-700\">Point Type</label> <select name=\"pointType\" id=\"pointType\" class=\"form-input mt-1 block w-full\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -218,7 +214,7 @@ func homeForm(pointMeta PointMeta, lat string, lng string, msg string) templ.Com
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(h.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 81, Col: 38}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 68, Col: 38}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -231,7 +227,7 @@ func homeForm(pointMeta PointMeta, lat string, lng string, msg string) templ.Com
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(h.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 81, Col: 49}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 68, Col: 49}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -249,7 +245,7 @@ func homeForm(pointMeta PointMeta, lat string, lng string, msg string) templ.Com
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("[%v, %v]", lat, lng))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 88, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 75, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -281,7 +277,7 @@ func homeEditForm(home Home, msg string, pointMeta PointMeta) templ.Component {
 			templ_7745c5c3_Var16 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<form hx-post=\"/homes?viewMode=view\" class=\"space-y-4\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div hx-target=\"this\"><form hx-post=\"/homes?viewMode=view\" class=\"space-y-4\">homeEditForm ")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -293,7 +289,7 @@ func homeEditForm(home Home, msg string, pointMeta PointMeta) templ.Component {
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(msg)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 102, Col: 42}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 90, Col: 42}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 			if templ_7745c5c3_Err != nil {
@@ -311,7 +307,7 @@ func homeEditForm(home Home, msg string, pointMeta PointMeta) templ.Component {
 		var templ_7745c5c3_Var18 string
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", home.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 106, Col: 73}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 94, Col: 73}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
@@ -324,7 +320,7 @@ func homeEditForm(home Home, msg string, pointMeta PointMeta) templ.Component {
 		var templ_7745c5c3_Var19 string
 		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%v", home.Lat))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 107, Col: 75}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 95, Col: 75}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
@@ -337,7 +333,7 @@ func homeEditForm(home Home, msg string, pointMeta PointMeta) templ.Component {
 		var templ_7745c5c3_Var20 string
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%v", home.Lng))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 108, Col: 75}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 96, Col: 75}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
@@ -350,7 +346,7 @@ func homeEditForm(home Home, msg string, pointMeta PointMeta) templ.Component {
 		var templ_7745c5c3_Var21 string
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(home.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 113, Col: 73}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 101, Col: 73}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
@@ -363,7 +359,7 @@ func homeEditForm(home Home, msg string, pointMeta PointMeta) templ.Component {
 		var templ_7745c5c3_Var22 string
 		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(home.Url)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 118, Col: 67}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 106, Col: 67}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {
@@ -376,7 +372,7 @@ func homeEditForm(home Home, msg string, pointMeta PointMeta) templ.Component {
 		var templ_7745c5c3_Var23 string
 		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(home.Notes)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 123, Col: 73}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 111, Col: 73}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 		if templ_7745c5c3_Err != nil {
@@ -394,7 +390,7 @@ func homeEditForm(home Home, msg string, pointMeta PointMeta) templ.Component {
 			var templ_7745c5c3_Var24 string
 			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(h.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 131, Col: 42}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 119, Col: 42}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 			if templ_7745c5c3_Err != nil {
@@ -407,7 +403,7 @@ func homeEditForm(home Home, msg string, pointMeta PointMeta) templ.Component {
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(h.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 131, Col: 53}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 119, Col: 53}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {
@@ -425,13 +421,21 @@ func homeEditForm(home Home, msg string, pointMeta PointMeta) templ.Component {
 		var templ_7745c5c3_Var26 string
 		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/homes/%d", home.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 139, Col: 127}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 127, Col: 127}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" hx-confirm=\"are you sure you want to delete this house?\">Delete</button> <button type=\"button\" class=\"form-button bg-gray-500 hover:bg-gray-600\" onclick=\"location.reload();\">Cancel</button></div></form>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = factorVoteList(pointMeta.factors, home).Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

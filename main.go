@@ -96,6 +96,9 @@ func main() {
 	r.Get("/delete-all", deleteHandler(db))
 	r.Delete("/delete-all", deleteHandler(db))
 
+	r.Get("/factor", factorHandler(db))
+	r.Post("/factor", factorHandler(db))
+
 	port := os.Getenv("PORT")
 	if len(port) == 0 {
 		port = ":8080"
@@ -542,7 +545,7 @@ func singleHomeHandler(db *gorm.DB) http.HandlerFunc {
 
 			home := GetHome(db, homeId)
 
-			pointMeta := GetPointMeta()
+			pointMeta := GetPointMeta(db)
 
 			viewMode := r.URL.Query().Get("viewMode")
 
@@ -594,7 +597,7 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 			lat := r.URL.Query().Get("lat")
 			lng := r.URL.Query().Get("lng")
 
-			pointMeta := GetPointMeta()
+			pointMeta := GetPointMeta(db)
 
 			homeForm := homeForm(pointMeta, lat, lng, "")
 			homeForm.Render(GetContext(r), w)
@@ -670,7 +673,7 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 				msg = "Updated Point"
 			}
 
-			pointMeta := GetPointMeta()
+			pointMeta := GetPointMeta(db)
 
 			viewMode := r.URL.Query().Get("viewMode")
 
@@ -699,16 +702,56 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 }
 
 // createHomeFactorRating handler with db dependency injection
+// createHomeFactorRatingForm handler with db dependency injection
 func createHomeFactorRating(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var rating HomeFactorRating
-		if err := json.NewDecoder(r.Body).Decode(&rating); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+		// Parse form data
+		if err := r.ParseForm(); err != nil {
+			warn := warning("Failed to parse form data")
+			warn.Render(GetContext(r), w)
 			return
 		}
 
-		db.Create(&rating)
-		json.NewEncoder(w).Encode(rating)
+		// Convert form values to the appropriate types
+		stars, err := strconv.Atoi(r.FormValue("stars"))
+		if err != nil || stars < 1 || stars > 5 {
+			warn := warning("Invalid stars value")
+			warn.Render(GetContext(r), w)
+			return
+		}
+
+		factorID, err := strconv.ParseUint(r.FormValue("factorId"), 10, 32)
+		if err != nil {
+			warn := warning("Invalid factor_id value")
+			warn.Render(GetContext(r), w)
+			return
+		}
+
+		homeID, err := strconv.ParseUint(r.FormValue("homeId"), 10, 32)
+		if err != nil {
+			warn := warning("Invalid home_id value")
+			warn.Render(GetContext(r), w)
+			return
+		}
+
+		// Create the HomeFactorRating instance
+		rating := HomeFactorRating{
+			Stars:    stars,
+			FactorID: uint(factorID),
+			HomeID:   uint(homeID),
+		}
+
+		// Save to the database
+		result := db.Create(&rating)
+		if result.Error != nil {
+			warn := warning("Failed to create home factor rating")
+			warn.Render(GetContext(r), w)
+			return
+		}
+
+		// Render success message
+		success := success("Home factor rating created")
+		success.Render(GetContext(r), w)
 	}
 }
 
@@ -745,4 +788,82 @@ func processMap(startPoint [2]float64, zoom, width, height int) image.Image {
 	resizedImg := resize.Resize(uint(width), uint(height), img, resize.Lanczos3)
 
 	return resizedImg
+}
+
+func factorHandler(db *gorm.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "GET":
+			factors := GetFactors(db)
+
+			factorList := factorList(factors)
+			factorList.Render(GetContext(r), w)
+			return
+		case "POST":
+			if err := r.ParseForm(); err != nil {
+				warn := warning("Unable to parse form data")
+				warn.Render(GetContext(r), w)
+				return
+			}
+
+			// Extract form fields
+			title := r.FormValue("title")
+			displayOrder := r.FormValue("displayOrder")
+
+			id := r.FormValue("id")
+			if len(id) == 0 {
+				factor := Factor{
+					Title:        title,
+					DisplayOrder: 99999,
+					ID:           0,
+				}
+
+				// Save the Factor object to the database
+				result := db.Save(&factor)
+				if result.Error != nil {
+					warn := warning("Failed to save factor")
+					warn.Render(GetContext(r), w)
+					return
+				}
+
+				success := success("Factor created")
+				success.Render(GetContext(r), w)
+				return
+
+			}
+			intInt, err := strconv.Atoi(id)
+			if err != nil {
+				warn := warning("Invalid id value")
+				warn.Render(GetContext(r), w)
+				return
+			}
+			displayOrderInt, err := strconv.Atoi(displayOrder)
+			if err != nil {
+				displayOrderInt = 99999
+			}
+
+			// Create a Factor object with form data
+			factor := Factor{
+				Title:        title,
+				DisplayOrder: displayOrderInt,
+				ID:           uint(intInt),
+			}
+
+			// Save the Factor object to the database
+			result := db.Save(&factor)
+			if result.Error != nil {
+				warn := warning("Failed to save factor")
+				warn.Render(GetContext(r), w)
+				return
+			}
+
+			success := success("Factor created")
+			success.Render(GetContext(r), w)
+			return
+		default:
+			warn := warning("Method not allowed")
+			warn.Render(GetContext(r), w)
+			return
+		}
+	}
 }

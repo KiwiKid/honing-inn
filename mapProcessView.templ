@@ -11,7 +11,7 @@ templ mapperProcessView(meta MapMeta, processingMeta MapProcessingMeta) {
 https://cdn.jsdelivr.net/npm/leaflet-image@0.4.0/leaflet-image.min.js
 "></script>
     </head>
-       <body onload={ mapActor() }>
+       <body hx-indicator=".loading-bar" onload={ mapActor() }>
 
         @globalStyles()
     

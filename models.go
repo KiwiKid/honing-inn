@@ -1,5 +1,9 @@
 package main
 
+import (
+	"gorm.io/gorm"
+)
+
 // Factor represents something like "Near bus lines", "Has backyard", etc.
 type Factor struct {
 	ID           uint   `gorm:"primaryKey"`
@@ -59,8 +63,9 @@ type MapMeta struct {
 }
 
 type PointMeta struct {
-	types []PointTypes
-	icons []PointIcons
+	types   []PointTypes
+	icons   []PointIcons
+	factors []Factor
 }
 
 type PointTypes struct {
@@ -73,7 +78,10 @@ type PointIcons struct {
 	Name string `json:"name"`
 }
 
-func GetPointMeta() PointMeta {
+func GetPointMeta(db *gorm.DB) PointMeta {
+
+	allFactors := GetFactors(db)
+
 	return PointMeta{
 		types: []PointTypes{
 			{ID: 1, Name: "Home"},
@@ -83,5 +91,6 @@ func GetPointMeta() PointMeta {
 			{ID: 1, Name: "Home"},
 			{ID: 2, Name: "Shape"},
 		},
+		factors: allFactors,
 	}
 }
