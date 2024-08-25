@@ -458,6 +458,7 @@ func shapeHandler(db *gorm.DB) http.HandlerFunc {
 
 				shapeTypes := GetShapeTypes(db)
 
+				w.Header().Set("hx-Refresh", "true")
 				areaShape := editShapeForm(shape, shapeTypes, "created new area")
 				areaShape.Render(GetContext(r), w)
 				return

@@ -36,8 +36,8 @@ func span() templ.Component {
 
 func mapActor() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_mapActor_f7a9`,
-		Function: `function __templ_mapActor_f7a9(){/**
+		Name: `__templ_mapActor_40aa`,
+		Function: `function __templ_mapActor_40aa(){/**
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Map} L 
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Marker} L.Marker
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').LatLng} L.LatLng
@@ -229,22 +229,11 @@ handleMapClick(event, map){
 
     switch(mode.value){
         case 'point':{
-         /*   const popup = ` + "`" + `<div class="new-popup" hx-target="this">
-                <form hx-post="/homes">
-                    <input type="hidden" name="lat" value="${latlng.lat}"></input>
-                    <input type="hidden" name="lng" value="${latlng.lng}"></input>
-                    <button type="submit">Create Point</button>
-                    <button onclick="location.reload();">cancel</button>
-                </form>
-             </div>` + "`" + `
-*/
 
             const popup = ` + "`" + `<div hx-get="/homes?lat=${latlng.lat}&lng=${latlng.lng}" hx-trigger="revealed">loading point..</div>` + "`" + `
-           //map.addMarker(latlng.lat, latlng.lng, {title: 'New Point'}).bindPopup(popup).openPopup().addTo(map);
 
             const marker = window.leaflet.circleMarker([latlng.lat, latlng.lng], { color: 'green', radius: 10})
  
-
              marker.addTo(map).bindPopup(popup, this.createPopupOptions)
              .openPopup();;
 
@@ -266,13 +255,6 @@ handleMapClick(event, map){
                 if(window.existingNewArea){
                  //   window.existingNewArea.remove()           
                 }
-                
-              /*  const popup = ` + "`" + `<div class="new-popup" hx-target="this">
-                <form hx-post="/shapes?updateMode=create-area">
-                    <input type="hidden" name="shapeData" value="${JSON.stringify(window.existingNewAreaPoints)}"></input>
-                    <input type="hidden" name=
-                    <button type="submit">Save Area</button>
-                </form>` + "`" + `*/
 
                    const popup = ` + "`" + `<div hx-get="/shapes?mode=area" hx-trigger="revealed">loading..</div>` + "`" + `
                     window.leaflet.polygon(window.existingNewAreaPoints, {color: 'green'}).bindPopup(popup, this.createAreaPopupOptions).openPopup().addTo(map);
@@ -821,7 +803,7 @@ handleMapMoveEnd(e){
 
       
 }`,
-		Call:       templ.SafeScript(`__templ_mapActor_f7a9`),
-		CallInline: templ.SafeScriptInline(`__templ_mapActor_f7a9`),
+		Call:       templ.SafeScript(`__templ_mapActor_40aa`),
+		CallInline: templ.SafeScriptInline(`__templ_mapActor_40aa`),
 	}
 }

@@ -24,7 +24,7 @@ templ shapeSelector(shapes []Shape){
 }
 
 templ addShapeForm(meta ShapeMeta){
-    <form hx-post="/shapes?updateMode=create-area">
+    <form hx-post="/shapes?updateMode=create-area" >
     <script>
           document.getElementById('shapeData').value = JSON.stringify(window.existingNewAreaPoints || []);
     </script>
@@ -48,7 +48,7 @@ templ addShapeForm(meta ShapeMeta){
 }
 
 templ editShapeForm(shape Shape, meta ShapeMeta, msg string){
-     <form hx-post="/shapes?updateMode=create-area" class="w-10" hx-target="this">
+     <form hx-post="/shapes?updateMode=create-area"  class="w-10" hx-target="this">
         if len(msg) > 0 {
             @success(msg)
         }
