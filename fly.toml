@@ -12,7 +12,7 @@
     PORT = '8080'
     DATABASE_URL = "/mnt/volume/data.db"
     PREVIEW_ENV = "true"
-    IMAGE_DIR = "/mnt/volume/images
+    IMAGE_DIR = "/mnt/volume/images"
 
   [http_service]
     internal_port = 8080
