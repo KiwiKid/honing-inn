@@ -1,31 +1,32 @@
-# fly.toml app configuration file generated for honing-inn-preview on 2024-08-25T13:25:29+12:00
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
+  # fly.toml app configuration file generated for honing-inn-preview on 2024-08-25T13:25:29+12:00
+  #
+  # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+  #
 
-app = 'honing-inn-preview'
-primary_region = 'syd'
+  app = 'honing-inn-preview'
+  primary_region = 'syd'
 
-[build]
+  [build]
 
-[env]
-  PORT = '8080'
-  DATABASE_URL = "/mnt/volume/data.db"
-  BASE_URL = "https://honing-inn-preview.fly.dev"
+  [env]
+    PORT = '8080'
+    DATABASE_URL = "/mnt/volume/data.db"
+    BASE_URL = "https://honing-inn-preview.fly.dev"
+    IMAGE_DIR = "/mnt/volume/images"
 
-[http_service]
-  internal_port = 8080
-  force_https = true
-  auto_stop_machines = 'stop'
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ['app']
+  [http_service]
+    internal_port = 8080
+    force_https = true
+    auto_stop_machines = 'stop'
+    auto_start_machines = true
+    min_machines_running = 0
+    processes = ['app']
 
-[[vm]]
-  memory = '1gb'
-  cpu_kind = 'shared'
-  cpus = 1
+  [[vm]]
+    memory = '1gb'
+    cpu_kind = 'shared'
+    cpus = 1
 
-[mounts]
-  source = "sqlite3_volume_preview"
-  destination = "/mnt/volume"
+  [mounts]
+    source = "sqlite3_volume_preview"
+    destination = "/mnt/volume"
