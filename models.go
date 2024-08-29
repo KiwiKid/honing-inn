@@ -78,6 +78,17 @@ type PointIcons struct {
 	Name string `json:"name"`
 }
 
+type ImageOverlay struct {
+	ID        uint    `gorm:"primaryKey"`
+	Name      string  `json:"name"`
+	FileName  string  `json:"fileName"`
+	Bounds    string  `json:"imgBounds"`
+	File      string  `json:"fileInput"`
+	KeyImage  string  `json:"keyImage"`
+	Opacity   float64 `json:"opacity"`
+	SourceUrl string  `json:"sourceUrl"`
+}
+
 func GetPointMeta(db *gorm.DB) PointMeta {
 
 	allFactors := GetFactors(db)

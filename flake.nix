@@ -30,7 +30,8 @@
             cd ~/mine/honing-in
             git config user.name $GIT_AUTHOR_USER
             git config user.email $GIT_AUTHOR_EMAIL
-            export DATABASE_URL=./tmp/data/dev.db
+            export DATABASE_URL=./tmp/dev.db
+            export IMAGE_DIR=./tmp/images
             templ generate && go build -o ./tmp/main .
           '';
         };
@@ -78,6 +79,8 @@
             git config user.name $GIT_AUTHOR_USER
             git config user.email $GIT_AUTHOR_EMAIL
            export  DATABASE_URL=./dev.db
+           export IMAGE_DIR=./tmp/images
+
             export PASS=pass
             code .
             tmux kill-session -t devSession

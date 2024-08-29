@@ -13,6 +13,12 @@ templ factorList(factors []Factor){
     @addFactor()
 }
 
+templ ratingsListView(ratings []HomeFactorRating){
+    for _, r := range ratings {
+        <div>{fmt.Sprintf("%+v", r)}</div>
+    }
+}
+
 templ factorVoteList(factors []Factor, home Home){
     <div class="grid grid-cols-5 gap-4">
         for _, fact := range factors {

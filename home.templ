@@ -4,7 +4,7 @@ import (
     "fmt"
 )
 
-templ homeView(home Home, msg string, pointMeta PointMeta) {
+templ homeView(home Home, msg string, pointMeta PointMeta, ratings []HomeFactorAndRating) {
     <div class="space-y-4" hx-target="this"> 
         <!-- Display message -->
          if len(msg) > 0 {
@@ -12,37 +12,21 @@ templ homeView(home Home, msg string, pointMeta PointMeta) {
         }
 
         <div>
-            <div class="text-sm font-medium text-gray-700">Title:</div>
-            <div class="text-gray-900">{ home.Title }</div>
+            <div class="text-4xl text-gray-900">{ home.Title }</div>
         </div>
 
         <div>
-            <a href={ templ.SafeURL(home.Url) }>LINK</a>
+            <a href={ templ.SafeURL(home.Url) }>{home.Url}</a>
         </div>
 
         <div>
-            <div class="text-sm font-medium text-gray-700">Notes:</div>
             <div class="text-gray-900">{ home.Notes }</div>
         </div>
 
         <div>
-            <div class="text-sm font-medium text-gray-700">Point Type:</div>
-            <div class="text-gray-900">
-                {  home.PointType }
-            </div>
-        </div>
-
-        <div>
-            <div class="text-sm font-medium text-gray-700">Location:</div>
-            <div class="text-gray-500">
-                { fmt.Sprintf("[%v, %v]", home.Lat, home.Lng) }
-            </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div>
             <button hx-get={ fmt.Sprintf("/homes/%d?viewMode=edit", home.ID) } class="btn-edit">Edit</button>
         </div>
+        @ratingListView(ratings)
     </div>
 }
 
@@ -132,4 +116,15 @@ templ homeEditForm(home Home, msg string, pointMeta PointMeta){
     </form>
     @factorVoteList(pointMeta.factors, home)
     </div>
+}
+
+
+templ ratingListView(ratingWithFactors []HomeFactorAndRating){
+
+    for _, r := range ratingWithFactors {
+            <div>
+                <!-- Display Factor and Rating Information -->
+                {fmt.Sprintf("%s - %d", r.Factor.Title, r.HomeFactorRating.Stars)}
+            </div>
+    }
 }

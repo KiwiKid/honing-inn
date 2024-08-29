@@ -32,7 +32,8 @@ class mapActor {
       this.mode = initialMode;
       this.mapContainerId = mapContainerId;
       this.mapMeta = null
-
+      this.imageOverlay = null
+      this.imageResizeMode = 'none'
       
       this.createPopupOptions = {
         color: 'green',
@@ -60,28 +61,11 @@ class mapActor {
       window.mapActor = this;
       window.myMap = this.map;
 
-      var warning = L.layerGroup([], { collapsed: false});
-      var noGo = L.layerGroup([]);
-      var good = L.layerGroup([]);
+      var warning = L.layerGroup([], { collapsed: true});
+      var noGo = L.layerGroup([], { collapsed: true}); 
+      var good = L.layerGroup([], { collapsed: true});
       var homes = L.layerGroup([],  { collapsed: false});
-      var redFlags = L.layerGroup([]);
-
-      window.overlayMaps = {
-          "warning": warning,
-          "noGo": noGo,
-          "good": good,
-          "homes": homes,
-          "redFlags": redFlags
-      };
-
-    }
-  
-    /**
-     * Initializes the map using query string parameters for latitude, longitude, and zoom level.
-     */ 
-
-    initMap() {
-      this.mapMeta = JSON.parse(document.getElementById(this.mapContainerId).getAttribute('data-meta')) 
+      var redFlags = L.layerGroup([], { collapsed: true});
 
       var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -91,18 +75,83 @@ class mapActor {
       var osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '© OpenStreetMap contributors, Tiles style by Humanitarian OpenStreetMap Team hosted by OpenStreetMap France'});
+
+      this.layers = [osm, osmHOT]
+      
+    
+      window.overlayMaps = {
+          "warning": warning,
+          "noGo": noGo,
+          "good": good,
+          "homes": homes,
+          "redFlags": redFlags
+      };
+
+      window.baseMaps = {
+        "OpenStreetMap": osm,
+        "OpenStreetMap.HOT": osmHOT
+      };
+
+      this.layerGroups = {
+     //   ...window.overlayMaps,
+      }
+
+    }
+
+getMap(){
+  return this.map
+}
+
+  /***
+  * 
+  * @returns {L.LatLngBounds}
+  */
+    getBounds(){
+      return this.map.getBounds()
+    }
+
+    /**
+     * 
+     * @param southWest {L.LatLng}
+     * @param northEast {L.LatLng}
+     */
+    setNewImageOverlayBounds(southWest, northEast){
+
+      const imgBounds = document.getElementById('imgBounds');
+      const bounds = L.latLngBounds(
+        southWest,
+        northEast
+      );
+      imgBounds.value = JSON.stringify(bounds)
+
+      window.mapActor.imageOverlay.setBounds(bounds);
+    }
+
+    setNewImageOverlayOpacity(opacity){
+      const imgOpacity = document.getElementById('imgOpacity');
+      imgOpacity.value = opacity
+      window.mapActor.imageOverlay.setOpacity(opacity);
+    }
+
+  
+    /**
+     * Initializes the map using query string parameters for latitude, longitude, and zoom level.
+     */ 
     
 
-        var baseMaps = {
-          "OpenStreetMap": osm,
-          "OpenStreetMap.HOT": osmHOT
-      };
+    initMap() {
+      this.mapMeta = JSON.parse(document.getElementById(this.mapContainerId).getAttribute('data-meta')) 
+
+
+
+
 
       if(this.mapMeta.ProcessMode){
         this.map = L.map(this.mapContainerId, {
           center: [this.mapMeta.Lat, this.mapMeta.Lng],
           zoom: this.mapMeta.Zoom,
-          layers: [osm, osmHOT]
+          layers: this.layers,
+          preferCanvas: true
         })
 
         window.myMap = this.map;
@@ -145,14 +194,15 @@ class mapActor {
       this.map = L.map(this.mapContainerId, {
         center: [this.mapMeta.Lat, this.mapMeta.Lng],
         zoom: this.mapMeta.Zoom,
-        layers: [osm, osmHOT],
+        layers: this.layers,
         preferCanvas: true
       })
 
 
-      var layerControl = L.control.layers(baseMaps, overlayMaps, { collapsed: false}).addTo(this.map);
-      window.layerControl = layerControl
-=      
+
+
+      this.setLayers({})
+
         this.map.on('popupopen', function(e) {
               const popups = document.querySelectorAll(".leaflet-popup-content-wrapper")
               popups.forEach((p) => {
@@ -174,10 +224,278 @@ class mapActor {
       this.map.on('moveend', (e) => this.handleMapMoveEnd(e))
       this.map.on('zoonend', (e) => this.handleMapMoveEnd(e))
 
+      const ImageOverlayControl = L.Control.extend({
+            options: {
+                position: 'topleft'
+            },
 
+            onAdd: function(map) {
+
+
+
+              // Create the container for the custom control with Tailwind classes
+              const container = L.DomUtil.create('div', 'leaflet-control-custom flex flex-col items-center p-4 bg-white rounded-lg shadow-md leaflet-control');
+              let resizeMode = true;
+              let currentBounds = window.mapActor.map.getBounds()
+              let opacity = 0.8
+
+              const button = L.DomUtil.create('button')
+              button.textContent = "Manage Images"
+              button.setAttribute('hx-get', '/image-overlay?viewMode=controls')
+              button.setAttribute('hx-swap', 'outerHTML')
+              container.appendChild(button)
+
+             // Function to update image size
+              function updateImageSize() {
+                  if (window.mapActor.imageOverlay) {
+                      const bounds = window.mapActor.imageOverlay.getBounds();
+                      const sw = bounds.getSouthWest();
+                      const ne = bounds.getNorthEast();
+                      const newLat = new L.LatLng(sw.lat, sw.lng)
+                      const newLng = new L.LatLng(sw.lat + (height - (ne.lat - sw.lat)), sw.lng + (width - (ne.lng - sw.lng)))
+                      window.mapActor.imageOverlay.setNewImageOverlayBounds(newLat,  newLng)
+                  }
+              }
+
+                  // Handle key press events for resize mode
+                  document.addEventListener('keydown', function(event) {
+                    if (!resizeMode || !window.mapActor.imageOverlay) return;
+
+                      switch (event.key) {
+                          case 'v': // Increase size
+                              resizeImage(1.1);
+                              break;
+                          case 'b': // Increase size little
+                              resizeImage(1.01);
+                              break;
+                          case 'n': // Decrease size little
+                              resizeImage(0.99);
+                              break;
+                          case 'm': // Decrease size
+                              resizeImage(0.9);
+                              break;
+                          case 'w': // Move up
+                              moveImage(0.0005, 0);
+                              break;
+                          case 's': // Move down
+                              moveImage(-0.0005, 0);
+                              break;
+                          case 'a': // Move left
+                              moveImage(0, -0.0005);
+                              break;
+                          case 'd': // Move right
+                              moveImage(0, 0.0005);
+                              break;
+                          case '[': // Decrease opacity
+                              adjustOpacity(-0.1);
+                              break;
+                          case ']': // Increase opacity
+                              adjustOpacity(0.1);
+                              break;
+                          case 'x': // remove
+                              map.removeLayer(window.mapActor.imageOverlay);
+                              window.mapActor.toggleResizeMode(false)
+                              break;
+                          case 'Escape': // Exit resize mode
+                              window.mapActor.toggleResizeMode(false);
+                              break;
+                          case 'h': // Increase height
+                            adjustHeight(0.99);
+                              break;
+                          case 'H': // Decrease height
+                             adjustHeight(1.01);
+                              break;
+                          case 'j': // Decrease height slightly
+                            adjustWidth(0.99);
+                              break;
+                          case 'J': // Increase height slightly
+                              adjustWidth(1.01);
+                              break;
+                      }
+                  });
+
+                  function resizeImage(scaleFactor) {
+                      const bounds = window.mapActor.imageOverlay.getBounds();
+                      const southWest = bounds.getSouthWest();
+                      const northEast = bounds.getNorthEast();
+
+                      const newSouthWest = new L.LatLng(
+                          southWest.lat - (southWest.lat - northEast.lat) * (scaleFactor - 1) / 2,
+                          southWest.lng - (southWest.lng - northEast.lng) * (scaleFactor - 1) / 2
+                      )
+
+                      const newNorthEast = new L.LatLng(
+                          northEast.lat + (southWest.lat - northEast.lat) * (scaleFactor - 1) / 2,
+                          northEast.lng + (southWest.lng - northEast.lng) * (scaleFactor - 1) / 2
+                      );
+                      window.mapActor.setNewImageOverlayBounds(newSouthWest, newNorthEast);
+                  }
+
+                  function adjustHeight(scaleFactor) {
+                      const bounds = window.mapActor.imageOverlay.getBounds();
+                      const southWest = bounds.getSouthWest();
+                      const northEast = bounds.getNorthEast();
+
+                      const heightDifference = (northEast.lat - southWest.lat) * (scaleFactor - 1);
+                      const newSouthWest = new L.LatLng(
+                          southWest.lat - heightDifference / 2,
+                          southWest.lng
+                      );
+                      const newNorthEast = new L.LatLng(
+                          northEast.lat + heightDifference / 2,
+                          northEast.lng
+                      );
+                      window.mapActor.setNewImageOverlayBounds(newSouthWest, newNorthEast);
+                  }
+
+                  function adjustWidth(scaleFactor) {
+                      const bounds = window.mapActor.imageOverlay.getBounds();
+                      const southWest = bounds.getSouthWest();
+                      const northEast = bounds.getNorthEast();
+
+                      // Calculate the current width difference
+                      const widthDifference = (northEast.lng - southWest.lng) * (scaleFactor - 1);
+
+                      // Adjust the southwest and northeast coordinates based on the width difference
+                      const newSouthWest = new L.LatLng(
+                          southWest.lat,
+                          southWest.lng - widthDifference / 2
+                      );
+
+                      const newNorthEast = new L.LatLng(
+                          northEast.lat,
+                          northEast.lng + widthDifference / 2
+                      );
+                      window.mapActor.setNewImageOverlayBounds(newSouthWest, newNorthEast);
+                  }
+
+
+                  function moveImage(latOffset, lngOffset) {
+                      const bounds = window.mapActor.imageOverlay.getBounds();
+
+                      const newLat = new L.LatLng(bounds.getSouthWest().lat + latOffset, bounds.getSouthWest().lng + lngOffset)
+                      const newLng = new L.LatLng(bounds.getNorthEast().lat + latOffset, bounds.getNorthEast().lng + lngOffset)
+                      window.mapActor.setNewImageOverlayBounds(newLat, newLng);
+                  }
+
+                  function adjustOpacity(opacityChange) {
+                      opacity = Math.min(1.0, Math.max(0.0, opacity + opacityChange));  // Ensure opacity is between 0 and 1
+                      window.mapActor.setNewImageOverlayOpacity(opacity);
+                  }
+
+
+
+                  // Double-click to toggle resize mode
+               /*   map.on('dblclick', function() {
+                      toggleResizeMode(!resizeMode);
+                  });*/
+
+                  htmx.process(container);
+
+                  return container;
+              }
+          });
+
+
+        // Add the custom control to the map
+      this.map.addControl(new ImageOverlayControl({ position: 'topright' }));
 
       this.addCustomControl();
-      this.processShapesAndHomes();
+   //  this.processShapesAndHomes();
+  }
+
+
+  toggleResizeMode(enable) {
+    resizeMode = enable;
+    resizeModeIndicator.style.display = resizeMode ? 'block' : 'none';
+  }
+
+  setLayers(newLayers) { 
+    if (window.layerControl) {
+      window.layerControl.remove();
+    }
+    var layerControl = L.control.layers(window.baseMaps, { ...overlayMaps, ...newLayers}, { collapsed: false}).addTo(this.map);
+    window.layerControl = layerControl
+  }
+
+  addImageOverLay(overlay, name){
+      const layerGroup = L.layerGroup([overlay], { collapsed: true})
+      layerGroup.addTo(window.mapActor.map)
+      window.mapActor.layerGroups = {
+        ...window.mapActor.layerGroups,
+        [name]: layerGroup
+      }
+      this.setLayers(window.mapActor.layerGroups)
+      
+  }
+
+  setActiveOverlayImage(overlayName, overlaySourceUrl, bounds) {
+    const oldOverlay = window.mapActor.imageOverlay;
+    if (oldOverlay) {
+        const imageElement = oldOverlay._image;
+
+        // Remove the old Tailwind border class if present
+        imageElement.style.border = '';
+
+    }
+
+    // Get the overlay
+    const overlay = window.mapActor.layerGroups[overlayName];
+    
+    if (overlay) {
+      // Access the image overlay layer
+      window.mapActor.imageOverlay = overlay.getLayers()[0];
+      
+      // Get the image element from the overlay
+      const imageElement = window.mapActor.imageOverlay._image;      
+      // Add a new border directly
+      imageElement.style.border = '2px solid red'; 
+
+      const imgBounds = document.getElementById('imgBounds');
+      if(!bounds){
+        console.error('imgBounds not found - falling back to map bounds')
+        imgBounds.value = JSON.stringify(window.mapActor.getBounds());
+      }else{
+        imgBounds.value = bounds
+      }
+
+      const imgName = document.getElementById('imgName');
+      imgName.value = overlayName;
+
+      const imgOpacity = document.getElementById('imgOpacity');
+      imgOpacity.value = imageElement.style.opacity ? (+imageElement.style.opacity).toFixed(2) : 1;
+
+      const imgSourceUrl = document.getElementById('imgSourceUrl');
+      imgSourceUrl.value = overlaySourceUrl;
+
+      
+    } else {
+      console.warn(`Overlay not found in ${overlayName} in ${Object.keys(window.mapActor.layerGroups)}`);
+    }
+  }
+  
+  handleNewMapImage(event) {
+      const file = event.target.files[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+              const imgSrc = e.target.result;
+
+              // Remove previous image if exists
+              if (window.mapActor.imageOverlay) {
+                  window.mapActor.map.removeLayer(window.mapActor.imageOverlay);
+              }
+              
+              //const popup = `<div hx-get="/image-overlay?viewMode=popup" hx-trigger="revealed">loading..</div>`
+              // Define the initial bounds where the image will be placed
+              const currentBounds = window.mapActor.map.getBounds()
+              const boundsInput = document.getElementById('imgBounds')
+              boundsInput.value = JSON.stringify(currentBounds);
+              window.mapActor.addImageOverLay(L.imageOverlay(imgSrc, currentBounds), 'new image')
+          };
+
+          reader.readAsDataURL(file);
+      }
   }
 
 handleMapClick(event, map){
@@ -189,6 +507,7 @@ handleMapClick(event, map){
         return    
     }else {
         console.log('map click')
+        console.log(event.target.name)
         console.log(event)
     }
 
@@ -219,19 +538,30 @@ handleMapClick(event, map){
                 const polyGon = window.leaflet.polygon(window.existingNewAreaPoints, {color: 'green'}).addTo(map);        
                 window.existingNewArea = polyGon  
             }else {
-                window.existingNewAreaPoints = [...window.existingNewAreaPoints, [latlng.lat, latlng.lng]]
-                if(window.existingNewArea){
-                 //   window.existingNewArea.remove()           
-                }
-
-                   const popup = `<div hx-get="/shapes?mode=area" hx-trigger="revealed">loading..</div>`
-                    window.leaflet.polygon(window.existingNewAreaPoints, {color: 'green'}).bindPopup(popup, this.createAreaPopupOptions).openPopup().addTo(map);
+                
+              const previousPoint = window.existingNewAreaPoints[window.existingNewAreaPoints.length - 1];
+              const newPoint = [latlng.lat, latlng.lng];
+              
+              // Add the new point to the array
+              window.existingNewAreaPoints.push(newPoint);
+              
+              // Draw the line between the previous point and the new point
+              window.leaflet.polyline([ previousPoint , newPoint], {color: 'green'}).addTo(map);
+          
+              // Redraw the polygon if needed
+              if (window.existingNewArea) {
+                  // window.existingNewArea.remove()           
+              } 
+              
+              const popup = `<div hx-get="/shapes?mode=area" hx-trigger="revealed">loading..</div>`;
+              window.leaflet.polygon(window.existingNewAreaPoints, {color: 'green'}).bindPopup(popup, this.createAreaPopupOptions).openPopup().addTo(map);
               //  window.leaflet.polygon(window.existingNewAreaPoints, {color: 'red'}).bindPopup(popup).openPopup().addTo(map);
             }
             break;
         }
         case '---': {
             highlightElement(document.getElementById('mode'))
+            break;
         }
         default: {
             console.error(`mode  "${mode.value}" not found`)
@@ -436,7 +766,7 @@ handleMapMoveEnd(e){
         case "good":
           areaOptions.color = '#169016'
           break;
-        case "no-go":
+        case "noGo":
           areaOptions.color = 'black'
           break
         case "warning":
@@ -447,7 +777,7 @@ handleMapMoveEnd(e){
           console.error(`shapeKind ${areaOptions.shapeKind} not found`)
       } 
 
-      const layerGroup = shapeLayerMapping[areaOptions.shapeKind] || L.layerGroup()
+      const layerGroup = shapeLayerMapping[areaOptions.shapeKind] || L.layerGroup({})
 
       const polygon = L.polygon(latlngs, areaOptions).bindPopup(`<div hx-get="/shapes/${areaOptions.shapeId}" hx-trigger="revealed">loading...</div>`, bindOptions).openPopup().addTo(this.map)          .addTo(layerGroup);
 
@@ -491,15 +821,10 @@ handleMapMoveEnd(e){
 
         // Function to collect and process shapes and homes
     processShapesAndHomes() {
-
-          console.log('shape list js - processShapesAndHomes')
           // Group shapes into layers
           window.shapeLayers = {};
 
-              console.log(' Add home markers')
-
          document.querySelectorAll('span[data-shape-id]').forEach(function(element) {
-              console.log('Processing shapes');
               if (element.getAttribute('rendered') !== 'true') {
                   const shapeData = JSON.parse(element.getAttribute('data-shape-data'));
                   const shapeId = element.getAttribute('data-shape-id');
@@ -515,14 +840,10 @@ handleMapMoveEnd(e){
               }
           }.bind(this)); // Bind 'this' to ensure 'this.map' is accessible
 
-          console.log('Adding home markers');
-
           // Add home markers
           document.querySelectorAll('span[data-home-id]').forEach(function(element) {
-              console.log('Processing homes');
               if (element.getAttribute('rendered') !== 'true') {
                   const home = JSON.parse(element.getAttribute('data-home'))
-                  console.log(home)
                   const lat = home.Lat;
                   const lng = home.Lng;
                   const homeId = home.ID;
@@ -533,6 +854,41 @@ handleMapMoveEnd(e){
                   element.setAttribute('rendered', 'true');
               }
           });
+
+          document.querySelectorAll('span[data-img-overlay]').forEach(function(element){
+              if (element.getAttribute('rendered') !== 'true') {
+                const imgElem = JSON.parse(element.getAttribute('data-img-overlay'))
+              //  const imgData = element.getAttribute('data-img-src');
+                const imageUrl = element.getAttribute('data-img-url');
+
+                if(imgElem.fileInput.length == 0 || imgData.length == 0){
+                    console.error('No image file found')
+                    return
+                }
+
+                let imgBounds = imgElem.imgBounds
+                if(imgBounds.length == 0){
+                  imgBounds = window.mapActor.map.getBounds()
+                }else{
+                  imgBounds = JSON.parse(imgBounds);
+                }
+              
+              const bounds = L.latLngBounds(
+                  L.latLng(imgBounds._southWest.lat, imgBounds._southWest.lng),
+                  L.latLng(imgBounds._northEast.lat, imgBounds._northEast.lng)
+              );
+
+              if (!imgData.startsWith('data:image/png;base64,')) {
+                console.error('The base64 string does not start with the correct prefix.');
+                return
+            }
+                const overlay = L.imageOverlay(imageUrl, bounds, {opacity: imgElem.opacity ? imgElem.opacity : 1})
+                window.mapActor.addImageOverLay(overlay, imgElem.name)
+
+                element.setAttribute('rendered', 'true');
+
+              }
+          })
       }
 
       // Initialize map and process shapes and homes
@@ -600,7 +956,7 @@ handleMapMoveEnd(e){
           }
       
           // Calculate the new center for the next grid cell based on map bounds
-          const bounds = map.getBounds();
+          const bounds = window.mapActor.getBounds();
           const latDelta = bounds.getNorth() - bounds.getSouth();
           const lngDelta = bounds.getEast() - bounds.getWest();
       
@@ -697,70 +1053,6 @@ handleMapMoveEnd(e){
             }, 2000);  // Match the fade-out duration
         }, 2000);  // Duration of the highlight before fading out
     }
-
-     // Define the custom control
-    const CustomControl = L.Control.extend({
-        options: {
-            position: 'topright'
-        },
-
-        onAdd: function(map) {
-            // Create a div element with the 'custom-control' class
-            const controlDiv = L.DomUtil.create('div', 'custom-control');
-
-            // Add content to the control
-            controlDiv.innerHTML = `<div class="tools" click="(e) => e.stopPropagation()" >
-            <select id="mode" class="modeset" name="mode" click="(e) => e.stopPropagation()" >
-                        <option value="---">---</option>
-                        <option value="point">Create Points</option>
-                        <option value="area">Create Areas</option>
-                    </select>
-            </div>
-            `;
-
-            const modeSetting = new URLSearchParams(window.location.search)
-            const select = controlDiv.firstChild
-            select.value = modeSetting.get('mode')
-
-            select.addEventListener('change', (elm) => {
-                addQueryParam('mode', elm.target.value)
-            })
-
-            
-
-            return controlDiv;
-        },
-
-        onRemove: function(map) {
-            // Nothing to clean up when the control is removed
-        }
-    });
-/*
-    var maps = [];
-
-    L.Map.addInitHook(function () {
-        if(maps.length == 0){
-            maps.push(this);
-        }
-        
-
-        
-
-       this.on('moveend', function(e){
-                console.log('moveend')
-        })
-        this.on('move', function(e){
-                console.log('move')
-        })
-
-      
-
-        this.addControl(new CustomControl());
-
-    });*/
-
-
-
       const info = document.querySelector("#info");
 
       const setMode = function(mode){

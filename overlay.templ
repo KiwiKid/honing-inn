@@ -1,0 +1,162 @@
+package main
+
+import (
+  "fmt"
+)
+
+templ imageOverlayPopup(){
+   
+}
+
+templ resizeModeWords(){
+  <div id="resizeModeIndicator" class="resize-mode text-sm text-gray-500 bg-yellow-100 p-2 rounded-md" >
+      Resize Mode Active - double click to exit resize - (WASD to move)
+    </div>
+    <div>
+     (v, b, n, m to resize)
+     </div>
+     <div>
+      - ([, ] to change opacity)
+     </div>
+     <div>
+       (h - make shorter, j - make less-wide, H - make taller, J - make wider)
+       </div>
+       <div>
+       (x to remove image)
+       </div>
+}
+
+templ imageOverlayScript(){
+      <script>
+    //  document.addEventListener('DOMContentLoaded', function () {
+        const buttons = document.querySelectorAll('.img-edit-button');
+        
+        buttons.forEach(function(button) {
+          // Retrieve data attributes
+          const imgName = button.getAttribute('data-img-name');
+          const imageId = button.getAttribute('data-img-id');
+          
+          // Update the button's text content based on data attribute
+          button.textContent = `Edit ${imgName}`;
+          
+          // Optionally update hx-get if needed
+          button.setAttribute('hx-get', `/image-overlay?viewMode=edit&imageId=${imageId}`);
+          htmx.process(button)
+
+          
+        });
+  //    });
+    </script>
+}
+
+templ imageOverlayControls(images []ImageOverlay){
+      <div class="flex flex-col">
+        for _, image := range images {
+          <div>
+          <button class="img-edit-button" hx-target="#image-form" hx-swap="outerHTML" data-img-name={image.Name} data-img-id={ fmt.Sprintf("%d", image.ID) }> 
+            {fmt.Sprintf("Edit %s", image.Name)}
+          </button>
+          </div>
+        }
+        </div>
+    <form hx-post="/image-overlay" hx-encoding="multipart/form-data" hx-swap="outerHTML" id="image-form" class="flex flex-col items-center space-y-6 p-6 bg-gray-100 bg-white rounded-lg shadow-md">
+        <div class="leaflet-control-custom flex flex-col items-center p-4 ">
+        <input type="hidden" name="imgBounds" id="imgBounds" />
+          <label for="file-input" class="text-gray-700 font-semibold">
+              New Image
+                  <input type="file" id="file-input" name="fileInput" accept="image/*" class="w-full text-gray-600" required/>
+          </label>
+      </div>
+
+    @resizeModeWords()
+
+    <button type="submit" class="px-6 py-2 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600">
+      Submit
+    </button>
+  </form>
+    <script>
+        const inputs = document.querySelector('#file-input')
+        inputs.addEventListener('change', window.mapActor.handleNewMapImage)
+    </script>
+
+
+  @imageOverlayScript()
+}
+
+templ imageOverlayEdit(image ImageOverlay, msg string){
+ <div class="leaflet-control-custom flex flex-col items-center p-4 bg-white rounded-lg shadow-md"  id="image-form" >
+  if len(msg) > 0 {
+    @success(msg)
+  }
+  <form hx-post="/image-overlay" hx-target="#image-form" hx-swap="outerHTML" class="flex flex-col items-center space-y-6 p-6 bg-gray-100 rounded-lg shadow-md">
+    <div>
+        <label><input type="text" name="imgName" id="imgName" required value={ image.Name }/></label>
+    </div>
+
+    <div>
+      <input type="hidden" name="ID" value={ fmt.Sprintf("%d", image.ID)} />
+      <label>Img Source Link <input type="text" name="imgSourceUrl" id="imgSourceUrl" value={image.SourceUrl} /></label>
+    </div>
+  <br/>
+
+  @resizeModeWords()
+    <div>
+      <input type="hidden" name="ID" value={ fmt.Sprintf("%d", image.ID)} />
+      <label>Img Bounds <input type="text" name="imgBounds" id="imgBounds" value={image.Bounds} required /></label>
+    </div>
+    <div>
+        <label>Opacity <input type="text" name="imgOpacity" id="imgOpacity" required value={ fmt.Sprintf("%f", image.Opacity) }/></label>
+    </div>
+
+
+
+  <button type="submit" class="px-6 py-2 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600">
+    Submit
+  </button>
+  <button hx-delete={ fmt.Sprintf("/image-overlay/%d", image.ID) } hx-confirm={ fmt.Sprintf("Are you sure you want to delete overlay image %s?", image.Name) }>Delete</button>
+  </form>
+
+  @uploadImageOverlayKeyForm(image)
+
+</div>  
+
+      <script data-img-name={ image.Name } data-source-url={ image.SourceUrl } data-bounds={ image.Bounds } >
+       // if(!document.currentScript.getAttribute('data-bounds')){
+      //    console.error(`no data-bounds on image, could not setActiveOverlayImage`)
+          
+      //  }else{
+          window.mapActor.setActiveOverlayImage(document.currentScript.getAttribute('data-img-name'), document.currentScript.getAttribute('data-source-url'), document.currentScript.getAttribute('data-bounds'))
+      //  }
+        
+      </script>
+      
+
+}
+
+templ uploadImageOverlayKeyForm(image ImageOverlay){
+      <form hx-post={ fmt.Sprintf("/image-overlay/%d/key", image.ID) } hx-encoding="multipart/form-data" hx-target="#image-form" >
+       <input type="hidden" name="ID" value={ fmt.Sprintf("%d", image.ID) } />
+        if len(image.KeyImage) > 0 {
+          <img src={fmt.Sprintf("data:image/png;base64,%s", image.KeyImage) } height="100px" width="100px"/>
+          <details>
+          <summary>Key image set</summary>
+  
+            <label for="file-input" class="text-gray-700 font-semibold">
+                Edit Key Image
+                    <input type="file" id="file-input" name="fileInput" accept="image/*" class="w-full text-gray-600" required/>
+            </label>
+             <button type="submit">upload key image</button>
+
+        </details>
+        } else {
+          <input type="hidden" name="ID" value={ fmt.Sprintf("%d", image.ID) } />
+           <label for="file-input" class="text-gray-700 font-semibold">
+              New Key Image
+                  <input type="file" id="file-input" name="fileInput" accept="image/*" class="w-full text-gray-600" required/>
+          </label>
+              <button type="submit">upload key image</button>
+
+        }
+        
+      </form>
+}

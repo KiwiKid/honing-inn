@@ -16,7 +16,7 @@ func DBInit(config EnvConfig) (*gorm.DB, error) {
 	}
 
 	// Migrate the schema
-	err = db.AutoMigrate(&Factor{}, &Home{}, &HomeFactorRating{}, &Shape{}, &ShapeType{}, &ShapeKind{})
+	err = db.AutoMigrate(&Factor{}, &Home{}, &HomeFactorRating{}, &Shape{}, &ShapeType{}, &ShapeKind{}, &ImageOverlay{})
 	if err != nil {
 		log.Fatal("failed to migrate database:", err)
 	}
@@ -60,7 +60,7 @@ func InitShapeKinds(db *gorm.DB) error {
 			Name: "warning",
 		}, {
 			ID:   2,
-			Name: "no-go",
+			Name: "noGo",
 		}, {
 			ID:   3,
 			Name: "good",
@@ -150,12 +150,88 @@ func GetFactors(db *gorm.DB) []Factor {
 	return factors
 }
 
+func GetImgOverlay(db *gorm.DB, id int) ImageOverlay {
+	var overlay ImageOverlay
+	err := db.First(&overlay, id)
+	if err.Error != nil {
+		log.Printf("failed to get overlay:", err.Error)
+	}
+	return overlay
+}
+
+func GetImgOverlays(db *gorm.DB) []ImageOverlay {
+	var overlays []ImageOverlay
+	err := db.Find(&overlays)
+	if err.Error != nil {
+		log.Printf("failed to get overlays:", err.Error)
+		overlays = []ImageOverlay{}
+	}
+	return overlays
+}
+
+func SaveImgOverlay(db *gorm.DB, overlay ImageOverlay) (*ImageOverlay, error) {
+	err := db.Save(&overlay)
+	if err.Error != nil {
+		log.Printf("failed to save overlay:", err.Error)
+		return nil, err.Error
+	}
+	return &overlay, nil
+}
+
+func DeleteImgOverlay(db *gorm.DB, id int) *ImageOverlay {
+	overlay := GetImgOverlay(db, id)
+	err := db.Delete(&overlay)
+	if err.Error != nil {
+		log.Printf("failed to delete overlay:", err.Error)
+		return nil
+	}
+	return &overlay
+}
+
 func CreateShape(db *gorm.DB, shape Shape) Shape {
 	err := db.Create(&shape)
 	if err.Error != nil {
 		log.Fatal("failed to create shape:", err.Error)
 	}
 	return shape
+}
+
+type HomeFactorAndRating struct {
+	HomeFactorRating
+	Factor
+}
+
+func GetHomeRatings(db *gorm.DB, homeId uint) []HomeFactorAndRating {
+	var ratings []HomeFactorRating
+	err := db.Where("home_id = ?", homeId).Find(&ratings)
+	if err.Error != nil {
+		log.Fatal("failed to get ratings:", err.Error)
+	}
+
+	ratingIds := make([]uint, len(ratings))
+	for i, rating := range ratings {
+		ratingIds[i] = rating.FactorID
+	}
+
+	var factors []Factor
+	err2 := db.Find(&factors, "id IN (?)", ratingIds)
+	if err2.Error != nil {
+		log.Fatal("failed to get factors:", err2.Error)
+	}
+
+	var ratingsWithFactors []HomeFactorAndRating
+	for _, rating := range ratings {
+		for _, factor := range factors {
+			if rating.FactorID == factor.ID {
+				ratingsWithFactors = append(ratingsWithFactors, HomeFactorAndRating{
+					HomeFactorRating: rating,
+					Factor:           factor,
+				})
+			}
+		}
+	}
+
+	return ratingsWithFactors
 }
 
 func DeleteAll(db *gorm.DB) {

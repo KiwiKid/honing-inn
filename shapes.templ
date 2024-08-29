@@ -79,12 +79,19 @@ templ editShapeForm(shape Shape, meta ShapeMeta, msg string){
     </form>
 }
 
-templ shapeList(shapes []Shape, shapeMeta ShapeMeta, homes []Home){
-   
- 
+templ shapeList(shapes []Shape, shapeMeta ShapeMeta, homes []Home, imgOverlays []ImageOverlay){
      for _, h := range homes {
         @homeShape(h)
     }
+
+    for _, i := range imgOverlays {
+        @imageOverlay(i)
+    }
+    <div hx-swap-oob="true" id="overlay-controls">
+        for _, i := range imgOverlays {
+           { fmt.Sprintf("CONTROL: %+i", i)}
+        }
+    </div>
     
     for _, s := range shapes {
         switch s.ShapeType {
@@ -98,10 +105,8 @@ templ shapeList(shapes []Shape, shapeMeta ShapeMeta, homes []Home){
         }
     }
     <script>
-    
-        console.log('shape list js')
-        
-       // window.mapActor.processShapesAndHomes()
+           
+       window.mapActor.processShapesAndHomes()
     </script>
    
 
@@ -121,4 +126,8 @@ templ homeShape(h Home) {
         data-home-id={ fmt.Sprintf("%d", h.ID) } 
         data-point-kind={ h.PointType }>
     </span>
+}
+
+templ imageOverlay(i ImageOverlay) {
+    <span data-img-src={fmt.Sprintf("data:image/png;base64,%s", i.File)} data-img-url={ fmt.Sprintf("/images/%s", i.FileName) } data-img-overlay={ templ.JSONString(i)}></span>
 }

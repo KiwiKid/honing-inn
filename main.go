@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"image"
@@ -10,9 +11,11 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/nfnt/resize"
 	"gorm.io/gorm"
 )
@@ -39,6 +42,7 @@ type EnvConfig struct {
 	BaseURL             string
 	DBUrl               string
 	HuggingFaceAPIToken string
+	ImageDir            string
 }
 
 func GetEnvConfig() EnvConfig {
@@ -47,10 +51,15 @@ func GetEnvConfig() EnvConfig {
 		BaseURL:             os.Getenv("BASE_URL"),
 		DBUrl:               os.Getenv("DATABASE_URL"),
 		HuggingFaceAPIToken: os.Getenv("HUGGINGFACE_API_TOKEN"),
+		ImageDir:            os.Getenv("IMAGE_DIR"),
 	}
 
 	if len(config.DBUrl) == 0 {
 		log.Fatalf("DATABASE_URL not set")
+	}
+
+	if len(config.ImageDir) == 0 {
+		log.Fatalf("IMAGE_DIR not set")
 	}
 
 	if len(config.HuggingFaceAPIToken) == 0 {
@@ -76,6 +85,13 @@ func main() {
 	r.Get("/shapes", shapeHandler(db))
 	r.Get("/shapes/{shapeId:[0-9]+}", specificShapeHandler(db))
 	r.Delete("/shapes/{shapeId:[0-9]+}", specificShapeHandler(db))
+	r.Post("/image-overlay/{imageOverlayId:[0-9]+}/key", imageOverlayKeyHandler(db))
+
+	r.Get("/image-overlay", imageOverlayHandler(db, envConfig))
+	r.Post("/image-overlay", imageOverlayHandler(db, envConfig))
+	r.Delete("/image-overlay/{imageOverlayId:[0-9]+}", imageOverlayHandler(db, envConfig))
+
+	r.Get("/images/{imageID}", imageHandler(envConfig.ImageDir))
 
 	r.Get("/health", healthHandler())
 
@@ -156,6 +172,257 @@ func mapHandler(db *gorm.DB) http.HandlerFunc {
 		}
 
 	}
+
+}
+
+func imageHandler(imageDir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Get the image ID from the URL parameter
+		imageID := chi.URLParam(r, "imageID")
+
+		// Define the directory where images are stored
+
+		// Construct the full file path using the image ID
+		imagePath := filepath.Join(imageDir, fmt.Sprintf("%s.png", imageID))
+
+		// Check if the file exists
+		if _, err := os.Stat(imagePath); os.IsNotExist(err) {
+			http.Error(w, "Image not found", http.StatusNotFound)
+			return
+		}
+
+		// Serve the file
+		http.ServeFile(w, r, imagePath)
+	}
+}
+
+func imageOverlayKeyHandler(db *gorm.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "POST":
+			if err := r.ParseForm(); err != nil {
+				warning := warning("imageOverlayKeyHandler - Unable to parse form data")
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			fileInput, _, err := r.FormFile("fileInput") // Changed to use FormFile for file upload
+			if err != nil {
+				warning := warning(fmt.Sprintf("imageOverlayHandler - CREATE  - Unable to parse file input - %+v", err))
+				warning.Render(GetContext(r), w)
+				return
+			}
+			defer fileInput.Close()
+
+			var buf bytes.Buffer
+			if _, err := io.Copy(&buf, fileInput); err != nil {
+				warning := warning("Failed to read file content")
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			encodedFile := base64.StdEncoding.EncodeToString(buf.Bytes())
+
+			imgId := chi.URLParam(r, "imageOverlayId")
+			imgIdInt, err := strconv.Atoi(imgId)
+			if err != nil {
+				warning := warning(fmt.Sprintf("Invalid image ID - %s", imgId))
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			img := GetImgOverlay(db, imgIdInt)
+
+			img = ImageOverlay{
+				KeyImage: encodedFile,
+			}
+			msg := "Created new key image overlay"
+
+			result, err := SaveImgOverlay(db, img)
+			if err != nil {
+				warning := warning(fmt.Sprintf("Failed to save image overlay - %+v", err))
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			success := imageOverlayEdit(*result, msg)
+			success.Render(GetContext(r), w)
+		}
+	}
+
+}
+
+func imageOverlayHandler(db *gorm.DB, envConfig EnvConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "GET":
+			viewMode := r.URL.Query().Get("viewMode")
+
+			switch viewMode {
+			case "controls":
+				imageOverLays := GetImgOverlays(db)
+
+				overlay := imageOverlayControls(imageOverLays)
+				overlay.Render(GetContext(r), w)
+				return
+				// not used:
+			case "popup":
+				overlay := imageOverlayPopup()
+				overlay.Render(GetContext(r), w)
+				return
+			case "edit":
+				imageId := r.URL.Query().Get("imageId")
+				if imageId == "" {
+					warning := warning("Image ID not provided")
+					warning.Render(GetContext(r), w)
+					return
+				}
+				imageIdInt, err := strconv.Atoi(imageId)
+				if err != nil {
+					warning := warning(fmt.Sprintf("Invalid image ID - %s", imageId))
+					warning.Render(GetContext(r), w)
+					return
+				}
+
+				imgOverlay := GetImgOverlay(db, imageIdInt)
+
+				overlay := imageOverlayEdit(imgOverlay, "")
+				overlay.Render(GetContext(r), w)
+				return
+			default:
+				warning := warning(fmt.Sprintf("viewMode not allowed (controls, popup, edit) got [%s]", viewMode))
+				warning.Render(GetContext(r), w)
+			}
+		case "POST":
+
+			if err := r.ParseForm(); err != nil {
+				warning := warning("imageOverlayHandler - Unable to parse form data")
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			var img ImageOverlay
+			var msg string
+			ID := r.FormValue("ID")
+
+			if len(ID) == 0 {
+				fileInput, _, err := r.FormFile("fileInput") // Changed to use FormFile for file upload
+				if err != nil {
+					warning := warning(fmt.Sprintf("imageOverlayHandler - CREATE  - Unable to parse file input - %+v", err))
+					warning.Render(GetContext(r), w)
+					return
+				}
+				defer fileInput.Close()
+
+				var buf bytes.Buffer
+				if _, err := io.Copy(&buf, fileInput); err != nil {
+					warning := warning("Failed to read file content")
+					warning.Render(GetContext(r), w)
+					return
+				}
+				encodedFile := base64.StdEncoding.EncodeToString(buf.Bytes())
+				imgName := uuid.New().String()
+				img = ImageOverlay{
+					File:     encodedFile,
+					FileName: imgName,
+				}
+
+				saveErr := SaveImage(envConfig.ImageDir, buf.Bytes(), imgName)
+				if saveErr != nil {
+					warning := warning(fmt.Sprintf("Failed to save image overlay file - %+v", saveErr))
+					warning.Render(GetContext(r), w)
+					return
+				}
+
+				msg = fmt.Sprintf("Created new image overlay and file - %s", imgName)
+			} else {
+				imgBounds := r.FormValue("imgBounds")
+
+				if len(imgBounds) == 0 {
+					warning := warning("imgBounds not provided")
+					warning.Render(GetContext(r), w)
+					return
+				}
+				name := r.FormValue("imgName")
+				if len(name) == 0 {
+					warning := warning("name not provided")
+					warning.Render(GetContext(r), w)
+					return
+				}
+				imgOpacity := r.FormValue("imgOpacity")
+				if len(imgOpacity) == 0 {
+					warning := warning("imgOpacity not provided")
+					warning.Render(GetContext(r), w)
+					return
+				}
+				imgOpacityFloat, err := strconv.ParseFloat(imgOpacity, 64)
+				if err != nil {
+					warning := warning("Invalid imgOpacity value")
+					warning.Render(GetContext(r), w)
+					return
+				}
+
+				idInt, err := strconv.Atoi(ID)
+				if err != nil {
+					warning := warning("Invalid ID value")
+					warning.Render(GetContext(r), w)
+					return
+				}
+
+				img = GetImgOverlay(db, idInt)
+
+				imgSourceUrl := r.FormValue("imgSourceUrl")
+				if len(imgSourceUrl) != 0 {
+					img.SourceUrl = imgSourceUrl
+				}
+
+				img.Bounds = imgBounds
+				img.Name = name
+				img.Opacity = imgOpacityFloat
+
+				msg = fmt.Sprintf("Updated image overlay %s", img.Name)
+			}
+
+			result, err := SaveImgOverlay(db, img)
+			if err != nil {
+				warning := warning(fmt.Sprintf("Failed to save image overlay - %+v", err))
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			success := imageOverlayEdit(*result, msg)
+			success.Render(GetContext(r), w)
+			return
+		case "DELETE":
+			imageOverlayId := chi.URLParam(r, "imageOverlayId")
+
+			// Convert shapeIdStr to the appropriate type
+			imageOverlayIdInt, err := strconv.Atoi(imageOverlayId)
+			if err != nil {
+				warning := warning(fmt.Sprintf("Invalid image overlay ID - %s", imageOverlayId))
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			imgOverlay := DeleteImgOverlay(db, int(imageOverlayIdInt))
+			if imgOverlay == nil {
+				warning := warning(fmt.Sprintf("Failed to delete image overlay - %s", imageOverlayId))
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			w.Header().Add("HX-Refresh", "true")
+			success := success(fmt.Sprintf("Deleted image overlay - %s", imgOverlay.Name))
+			success.Render(GetContext(r), w)
+			return
+
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+	}
+
+	// Extract form fields
 
 }
 
@@ -388,8 +655,9 @@ func shapeHandler(db *gorm.DB) http.HandlerFunc {
 					shapeTypes := GetShapeTypes(db)
 					shapes := GetShapes(db)
 					homes := GetHomes(db)
+					imgOverlays := GetImgOverlays(db)
 
-					shapeList := shapeList(shapes, shapeTypes, homes)
+					shapeList := shapeList(shapes, shapeTypes, homes, imgOverlays)
 					shapeList.Render(GetContext(r), w)
 					return
 				}
@@ -553,7 +821,13 @@ func singleHomeHandler(db *gorm.DB) http.HandlerFunc {
 			log.Printf("\n\nviewviewviewview mode %s", viewMode)
 			switch viewMode {
 			case "view":
-				homeForm := homeView(home, "", pointMeta)
+
+				ratings := GetHomeRatings(db, home.ID)
+				for _, rating := range ratings {
+					log.Printf("rating %+v", rating)
+				}
+
+				homeForm := homeView(home, "", pointMeta, ratings)
 				homeForm.Render(GetContext(r), w)
 				return
 			case "edit":
@@ -566,7 +840,6 @@ func singleHomeHandler(db *gorm.DB) http.HandlerFunc {
 				return
 			}
 
-			return
 		case "DELETE":
 			idStr := chi.URLParam(r, "homeId")
 			id, err := strconv.Atoi(idStr)
@@ -678,10 +951,11 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 
 			viewMode := r.URL.Query().Get("viewMode")
 
-			log.Printf("\n\nviewviewviewview mode %s", viewMode)
 			switch viewMode {
 			case "view":
-				homeForm := homeView(home, msg, pointMeta)
+				ratings := GetHomeRatings(db, home.ID)
+
+				homeForm := homeView(home, msg, pointMeta, ratings)
 				homeForm.Render(GetContext(r), w)
 				return
 			case "edit":
