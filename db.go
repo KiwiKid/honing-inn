@@ -103,7 +103,7 @@ func DeleteShape(db *gorm.DB, shapeId uint) Shape {
 	return shape
 }
 
-func GetHome(db *gorm.DB, id int) Home {
+func GetHome(db *gorm.DB, id uint) Home {
 	var home Home
 	err := db.First(&home, id)
 	if err.Error != nil {
@@ -196,41 +196,50 @@ func CreateShape(db *gorm.DB, shape Shape) Shape {
 	return shape
 }
 
+func UpdateShape(db *gorm.DB, shape Shape) Shape {
+	err := db.Save(&shape)
+	if err.Error != nil {
+		log.Fatal("failed to update shape:", err.Error)
+	}
+	return shape
+}
+
 type HomeFactorAndRating struct {
-	HomeFactorRating
+	*HomeFactorRating
 	Factor
 }
 
 func GetHomeRatings(db *gorm.DB, homeId uint) []HomeFactorAndRating {
+
+	factors := GetFactors(db)
+
 	var ratings []HomeFactorRating
 	err := db.Where("home_id = ?", homeId).Find(&ratings)
 	if err.Error != nil {
 		log.Fatal("failed to get ratings:", err.Error)
 	}
 
-	ratingIds := make([]uint, len(ratings))
-	for i, rating := range ratings {
-		ratingIds[i] = rating.FactorID
-	}
-
-	var factors []Factor
-	err2 := db.Find(&factors, "id IN (?)", ratingIds)
-	if err2.Error != nil {
-		log.Fatal("failed to get factors:", err2.Error)
+	ratingMap := make(map[uint]HomeFactorRating)
+	for _, rating := range ratings {
+		ratingMap[rating.FactorID] = rating
 	}
 
 	var ratingsWithFactors []HomeFactorAndRating
-	for _, rating := range ratings {
-		for _, factor := range factors {
-			if rating.FactorID == factor.ID {
-				ratingsWithFactors = append(ratingsWithFactors, HomeFactorAndRating{
-					HomeFactorRating: rating,
-					Factor:           factor,
-				})
-			}
+	for _, factor := range factors {
+		if rating, exists := ratingMap[factor.ID]; exists {
+			// Factor has a rating
+			ratingsWithFactors = append(ratingsWithFactors, HomeFactorAndRating{
+				HomeFactorRating: &rating,
+				Factor:           factor,
+			})
+		} else {
+			// Factor does not have a rating
+			ratingsWithFactors = append(ratingsWithFactors, HomeFactorAndRating{
+				HomeFactorRating: nil,
+				Factor:           factor,
+			})
 		}
 	}
-
 	return ratingsWithFactors
 }
 

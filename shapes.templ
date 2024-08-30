@@ -52,6 +52,9 @@ templ editShapeForm(shape Shape, meta ShapeMeta, msg string){
         if len(msg) > 0 {
             @success(msg)
         }
+        if shape.ID > 0 {
+            <input type="hidden" name="ID" id="ID" value={ fmt.Sprintf("%d", shape.ID) } ></input>
+        }
          <input type="hidden" name="shapeData" value={shape.ShapeData}></input>
         <label>shapeTitle: <input name="shapeTitle" value={shape.ShapeTitle}></input></label>
          <label><select name="shapeKind">shapeKind

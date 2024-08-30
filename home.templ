@@ -67,7 +67,7 @@ templ homeForm(pointMeta PointMeta, lat string, lng string, msg string){
 </form>
 
 }
-templ homeEditForm(home Home, msg string, pointMeta PointMeta){
+templ homeEditForm(home Home, msg string, pointMeta PointMeta, ratings []HomeFactorAndRating){
     <div hx-target="this"> 
     <form hx-post="/homes?viewMode=view" class="space-y-4" >homeEditForm
         if len(msg) > 0 {
@@ -114,7 +114,7 @@ templ homeEditForm(home Home, msg string, pointMeta PointMeta){
 
         
     </form>
-    @factorVoteList(pointMeta.factors, home)
+    @factorVoteList(ratings, home)
     </div>
 }
 
@@ -123,8 +123,10 @@ templ ratingListView(ratingWithFactors []HomeFactorAndRating){
 
     for _, r := range ratingWithFactors {
             <div>
+                if r.HomeFactorRating != nil {
                 <!-- Display Factor and Rating Information -->
                 {fmt.Sprintf("%s - %d", r.Factor.Title, r.HomeFactorRating.Stars)}
+                }
             </div>
     }
 }

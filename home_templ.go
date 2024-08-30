@@ -254,7 +254,7 @@ func homeForm(pointMeta PointMeta, lat string, lng string, msg string) templ.Com
 	})
 }
 
-func homeEditForm(home Home, msg string, pointMeta PointMeta) templ.Component {
+func homeEditForm(home Home, msg string, pointMeta PointMeta, ratings []HomeFactorAndRating) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
@@ -426,7 +426,7 @@ func homeEditForm(home Home, msg string, pointMeta PointMeta) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = factorVoteList(pointMeta.factors, home).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = factorVoteList(ratings, home).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -457,18 +457,24 @@ func ratingListView(ratingWithFactors []HomeFactorAndRating) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		for _, r := range ratingWithFactors {
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div><!-- Display Factor and Rating Information -->")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var27 string
-			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%s - %d", r.Factor.Title, r.HomeFactorRating.Stars))
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 127, Col: 81}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
+			if r.HomeFactorRating != nil {
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<!-- Display Factor and Rating Information --> ")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var27 string
+				templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%s - %d", r.Factor.Title, r.HomeFactorRating.Stars))
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `home.templ`, Line: 128, Col: 81}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div>")
 			if templ_7745c5c3_Err != nil {

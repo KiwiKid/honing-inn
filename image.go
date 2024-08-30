@@ -24,3 +24,15 @@ func SaveImage(saveDir string, imageData []byte, imageID string) error {
 
 	return nil
 }
+
+func DeleteImage(saveDir string, imageID string) error {
+	// Define the file path using the imageID as the filename
+	filePath := filepath.Join(saveDir, fmt.Sprintf("%s.png", imageID))
+
+	// Remove the file
+	if err := os.Remove(filePath); err != nil {
+		return fmt.Errorf("unable to delete image: %w", err)
+	}
+
+	return nil
+}

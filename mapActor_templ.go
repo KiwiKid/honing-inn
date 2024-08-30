@@ -36,8 +36,8 @@ func span() templ.Component {
 
 func mapActor() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_mapActor_74db`,
-		Function: `function __templ_mapActor_74db(){/**
+		Name: `__templ_mapActor_21fe`,
+		Function: `function __templ_mapActor_21fe(){/**
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Map} L 
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Marker} L.Marker
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').LatLng} L.LatLng
@@ -149,19 +149,21 @@ getMap(){
      */
     setNewImageOverlayBounds(southWest, northEast){
 
-      const imgBounds = document.getElementById('imgBounds');
       const bounds = L.latLngBounds(
         southWest,
         northEast
       );
-      imgBounds.value = JSON.stringify(bounds)
-
       window.mapActor.imageOverlay.setBounds(bounds);
+      console.log(` + "`" + `setNewImageOverlayBounds ${JSON.stringify(bounds)}` + "`" + `)
+      window.mapActor.imageOverlay.setZIndex(1000)
+      const imgBounds = document.getElementById('imgBounds');
+      imgBounds.value = JSON.stringify(bounds)
     }
 
     setNewImageOverlayOpacity(opacity){
       const imgOpacity = document.getElementById('imgOpacity');
       imgOpacity.value = opacity
+      console.log(` + "`" + `setNewImageOverlayOpacity ${opacity}` + "`" + `)
       window.mapActor.imageOverlay.setOpacity(opacity);
     }
 
@@ -272,9 +274,10 @@ getMap(){
               let opacity = 0.8
 
               const button = L.DomUtil.create('button')
-              button.textContent = "Manage Images"
+              button.textContent = "Loading images"
               button.setAttribute('hx-get', '/image-overlay?viewMode=controls')
               button.setAttribute('hx-swap', 'outerHTML')
+              button.setAttribute('hx-trigger', 'click, every 1s')
               container.appendChild(button)
 
              // Function to update image size
@@ -309,14 +312,27 @@ getMap(){
                           case 'w': // Move up
                               moveImage(0.0005, 0);
                               break;
+                          case 'W': // Move up
+                              moveImage(0.005, 0);
+                              break;
                           case 's': // Move down
                               moveImage(-0.0005, 0);
+                              break;
+                          case 'S': // Move down
+                              moveImage(-0.005, 0);
                               break;
                           case 'a': // Move left
                               moveImage(0, -0.0005);
                               break;
+                          case 'A': // Move left
+                              moveImage(0, -0.005);
+                              break;
                           case 'd': // Move right
                               moveImage(0, 0.0005);
+                              break;
+
+                          case 'D': // Move right
+                              moveImage(0, 0.005);
                               break;
                           case '[': // Decrease opacity
                               adjustOpacity(-0.1);
@@ -483,12 +499,21 @@ getMap(){
       // Add a new border directly
       imageElement.style.border = '2px solid red'; 
 
-      const imgBounds = document.getElementById('imgBounds');
       if(!bounds){
         console.error('imgBounds not found - falling back to map bounds')
-        imgBounds.value = JSON.stringify(window.mapActor.getBounds());
+        bounds = window.mapActor.map.getBounds()
+        const sw = bounds.getSouthWest();
+        const ne = bounds.getNorthEast();
+        const newLat = new L.LatLng(sw.lat, sw.lng)
+        const newLng = new L.LatLng(ne.lat, ne.lng)
+        window.mapActor.setNewImageOverlayBounds(newLat, newLng)
       }else{
-        imgBounds.value = bounds
+      //  imgBounds.value = bounds
+      const boundsObj = JSON.parse(bounds)
+      const sw = new L.LatLng(boundsObj._southWest.lat, boundsObj._southWest.lng)
+      const ne = new L.LatLng(boundsObj._northEast.lat, boundsObj._northEast.lng)
+        window.mapActor.setNewImageOverlayBounds(sw, ne);
+
       }
 
       const imgName = document.getElementById('imgName');
@@ -643,7 +668,7 @@ handleMapMoveEnd(e){
 
         // Add content to the control
         controlDiv.innerHTML = ` + "`" + `
-          <div class="tools" onclick="(e) => e.stopPropagation()">
+          <div class="mb-10 " onclick="(e) => e.stopPropagation()">
             <select id="mode" class="modeset" name="mode" onclick="(e) => e.stopPropagation()">
               <option value="---">---</option>
               <option value="point">Create Points</option>
@@ -893,7 +918,7 @@ handleMapMoveEnd(e){
               //  const imgData = element.getAttribute('data-img-src');
                 const imageUrl = element.getAttribute('data-img-url');
 
-                if(imgElem.fileInput.length == 0 || imgData.length == 0){
+                if(imgElem.fileInput.length == 0){
                     console.error('No image file found')
                     return
                 }
@@ -910,10 +935,10 @@ handleMapMoveEnd(e){
                   L.latLng(imgBounds._northEast.lat, imgBounds._northEast.lng)
               );
 
-              if (!imgData.startsWith('data:image/png;base64,')) {
+             /* if (!imgData.startsWith('data:image/png;base64,')) {
                 console.error('The base64 string does not start with the correct prefix.');
                 return
-            }
+            }*/
                 const overlay = L.imageOverlay(imageUrl, bounds, {opacity: imgElem.opacity ? imgElem.opacity : 1})
                 window.mapActor.addImageOverLay(overlay, imgElem.name)
 
@@ -1095,7 +1120,7 @@ handleMapMoveEnd(e){
 
       
 }`,
-		Call:       templ.SafeScript(`__templ_mapActor_74db`),
-		CallInline: templ.SafeScriptInline(`__templ_mapActor_74db`),
+		Call:       templ.SafeScript(`__templ_mapActor_21fe`),
+		CallInline: templ.SafeScriptInline(`__templ_mapActor_21fe`),
 	}
 }

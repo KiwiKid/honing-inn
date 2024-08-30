@@ -52,7 +52,7 @@ func resizeModeWords() templ.Component {
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"resizeModeIndicator\" class=\"resize-mode text-sm text-gray-500 bg-yellow-100 p-2 rounded-md\">Resize Mode Active - double click to exit resize - (WASD to move)</div><div>(v, b, n, m to resize)</div><div>- ([, ] to change opacity)</div><div>(h - make shorter, j - make less-wide, H - make taller, J - make wider)</div><div>(x to remove image)</div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"resizeModeIndicator\" class=\"resize-mode text-sm text-gray-500 bg-yellow-100 p-2 rounded-md\">Resize Mode Active - double click to exit resize </div><div>(WASD to move)</div><div>(v, b, n, m to resize)</div><div>- ([, ] to change opacity)</div><div>(h - make shorter, j - make less-wide, H - make taller, J - make wider)</div><div>(x to remove image)</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -116,7 +116,7 @@ func imageOverlayControls(images []ImageOverlay) templ.Component {
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(image.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 56, Col: 111}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 59, Col: 111}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -129,7 +129,7 @@ func imageOverlayControls(images []ImageOverlay) templ.Component {
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 56, Col: 154}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 59, Col: 154}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -142,7 +142,7 @@ func imageOverlayControls(images []ImageOverlay) templ.Component {
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("Edit %s", image.Name))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 57, Col: 47}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 60, Col: 47}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -153,7 +153,7 @@ func imageOverlayControls(images []ImageOverlay) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div><form hx-post=\"/image-overlay\" hx-encoding=\"multipart/form-data\" hx-swap=\"outerHTML\" id=\"image-form\" class=\"flex flex-col items-center space-y-6 p-6 bg-gray-100 bg-white rounded-lg shadow-md\"><div class=\"leaflet-control-custom flex flex-col items-center p-4 \"><input type=\"hidden\" name=\"imgBounds\" id=\"imgBounds\"> <label for=\"file-input\" class=\"text-gray-700 font-semibold\">New Image <input type=\"file\" id=\"file-input\" name=\"fileInput\" accept=\"image/*\" class=\"w-full text-gray-600\" required></label></div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div><form hx-post=\"/image-overlay\" hx-encoding=\"multipart/form-data\" hx-swap=\"outerHTML\" id=\"image-form\" class=\"flex flex-col items-center space-y-6 p-6 bg-gray-100 bg-white rounded-lg shadow-md\"><div class=\"leaflet-control-custom flex flex-col items-center p-4 \"><input type=\"hidden\" name=\"imgBounds\" id=\"imgBounds\"> <label for=\"file-input\" class=\"text-gray-700 font-semibold\"><div>New Image</div><div><input type=\"file\" id=\"file-input\" name=\"fileInput\" accept=\"image/*\" class=\"w-full text-gray-600\" required></div></label></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -208,7 +208,7 @@ func imageOverlayEdit(image ImageOverlay, msg string) templ.Component {
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(image.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 93, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 100, Col: 89}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -221,26 +221,26 @@ func imageOverlayEdit(image ImageOverlay, msg string) templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 97, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 104, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"> <label>Img Source Link <input type=\"text\" name=\"imgSourceUrl\" id=\"imgSourceUrl\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"> <label><div>Img Source Link </div><div><input type=\"text\" name=\"imgSourceUrl\" id=\"imgSourceUrl\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(image.SourceUrl)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 98, Col: 108}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 109, Col: 87}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></label></div><br>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></div></label></div><br>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -255,7 +255,7 @@ func imageOverlayEdit(image ImageOverlay, msg string) templ.Component {
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 104, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 118, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -268,7 +268,7 @@ func imageOverlayEdit(image ImageOverlay, msg string) templ.Component {
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(image.Bounds)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 105, Col: 94}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 119, Col: 94}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -281,7 +281,7 @@ func imageOverlayEdit(image ImageOverlay, msg string) templ.Component {
 		var templ_7745c5c3_Var14 string
 		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%f", image.Opacity))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 108, Col: 125}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 122, Col: 125}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 		if templ_7745c5c3_Err != nil {
@@ -294,7 +294,7 @@ func imageOverlayEdit(image ImageOverlay, msg string) templ.Component {
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/image-overlay/%d", image.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 116, Col: 64}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 130, Col: 64}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -307,7 +307,7 @@ func imageOverlayEdit(image ImageOverlay, msg string) templ.Component {
 		var templ_7745c5c3_Var16 string
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("Are you sure you want to delete overlay image %s?", image.Name))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 116, Col: 156}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 130, Col: 156}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
@@ -328,7 +328,7 @@ func imageOverlayEdit(image ImageOverlay, msg string) templ.Component {
 		var templ_7745c5c3_Var17 string
 		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(image.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 123, Col: 40}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 137, Col: 40}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
@@ -341,7 +341,7 @@ func imageOverlayEdit(image ImageOverlay, msg string) templ.Component {
 		var templ_7745c5c3_Var18 string
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(image.SourceUrl)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 123, Col: 76}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 137, Col: 76}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
@@ -354,7 +354,7 @@ func imageOverlayEdit(image ImageOverlay, msg string) templ.Component {
 		var templ_7745c5c3_Var19 string
 		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(image.Bounds)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 123, Col: 105}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 137, Col: 105}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
@@ -393,7 +393,7 @@ func uploadImageOverlayKeyForm(image ImageOverlay) templ.Component {
 		var templ_7745c5c3_Var21 string
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/image-overlay/%d/key", image.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 137, Col: 68}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 151, Col: 68}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
@@ -406,7 +406,7 @@ func uploadImageOverlayKeyForm(image ImageOverlay) templ.Component {
 		var templ_7745c5c3_Var22 string
 		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 138, Col: 73}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 152, Col: 73}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {
@@ -424,13 +424,13 @@ func uploadImageOverlayKeyForm(image ImageOverlay) templ.Component {
 			var templ_7745c5c3_Var23 string
 			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("data:image/png;base64,%s", image.KeyImage))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 140, Col: 75}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 154, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" height=\"100px\" width=\"100px\"> <details><summary>Key image set</summary> <label for=\"file-input\" class=\"text-gray-700 font-semibold\">Edit Key Image <input type=\"file\" id=\"file-input\" name=\"fileInput\" accept=\"image/*\" class=\"w-full text-gray-600\" required></label> <button type=\"submit\">upload key image</button></details>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" height=\"100px\" width=\"100px\"> <details><summary>Key image set</summary> <label for=\"file-input\" class=\"text-gray-700 font-semibold\">Edit Key Image <input type=\"file\" id=\"file-input\" name=\"fileInput\" accept=\"image/*\" class=\"w-full text-gray-600\" required></label><div><button type=\"submit\">upload key image</button></div></details>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -442,13 +442,13 @@ func uploadImageOverlayKeyForm(image ImageOverlay) templ.Component {
 			var templ_7745c5c3_Var24 string
 			templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 152, Col: 76}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 167, Col: 76}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"> <label for=\"file-input\" class=\"text-gray-700 font-semibold\">New Key Image <input type=\"file\" id=\"file-input\" name=\"fileInput\" accept=\"image/*\" class=\"w-full text-gray-600\" required></label> <button type=\"submit\">upload key image</button>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"> <label for=\"file-input\" class=\"text-gray-700 font-semibold\"><div>New Key Image</div><div><input type=\"file\" id=\"file-input\" name=\"fileInput\" accept=\"image/*\" class=\"w-full text-gray-600\" required></div></label><div><button type=\"submit\">upload key image</button></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

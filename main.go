@@ -97,7 +97,9 @@ func main() {
 
 	r.Post("/shapes", shapeHandler(db))
 
+	r.Get("/homes-rating", getHomeFactorRating(db))
 	r.Post("/homes-rating", createHomeFactorRating(db))
+
 	r.Post("/factors", createFactor(db))
 	r.Get("/homes/{homeId:[0-9]+}", singleHomeHandler(db))
 	r.Delete("/homes/{homeId:[0-9]+}", singleHomeHandler(db))
@@ -411,6 +413,13 @@ func imageOverlayHandler(db *gorm.DB, envConfig EnvConfig) http.HandlerFunc {
 				return
 			}
 
+			imageDelete := DeleteImage(envConfig.ImageDir, imgOverlay.FileName)
+			if imageDelete != nil {
+				warning := warning(fmt.Sprintf("Failed to delete image overlay file - %s", imgOverlay.FileName))
+				warning.Render(GetContext(r), w)
+				return
+			}
+
 			w.Header().Add("HX-Refresh", "true")
 			success := success(fmt.Sprintf("Deleted image overlay - %s", imgOverlay.Name))
 			success.Render(GetContext(r), w)
@@ -720,14 +729,26 @@ func shapeHandler(db *gorm.DB) http.HandlerFunc {
 					shape.ShapeKind = shapeKind
 				}
 
-				createdShape := CreateShape(db, shape)
+				var resultShape Shape
+				id := r.FormValue("ID")
+				if id != "" {
+					idInt, err := strconv.Atoi(id)
+					if err != nil {
+						warn := warning("Invalid ID value")
+						warn.Render(GetContext(r), w)
+						return
+					}
+					shape.ID = uint(idInt)
+					resultShape = UpdateShape(db, shape)
+				} else {
+					resultShape = CreateShape(db, shape)
 
-				log.Printf("shapeHandler CreateShape \n\n%+v", createdShape)
+				}
 
 				shapeTypes := GetShapeTypes(db)
 
 				w.Header().Set("hx-Refresh", "true")
-				areaShape := editShapeForm(shape, shapeTypes, "created new area")
+				areaShape := editShapeForm(resultShape, shapeTypes, "created new area")
 				areaShape.Render(GetContext(r), w)
 				return
 
@@ -812,7 +833,7 @@ func singleHomeHandler(db *gorm.DB) http.HandlerFunc {
 				return
 			}
 
-			home := GetHome(db, homeId)
+			home := GetHome(db, uint(homeId))
 
 			pointMeta := GetPointMeta(db)
 
@@ -831,7 +852,9 @@ func singleHomeHandler(db *gorm.DB) http.HandlerFunc {
 				homeForm.Render(GetContext(r), w)
 				return
 			case "edit":
-				homeForm := homeEditForm(home, "", pointMeta)
+				ratings := GetHomeRatings(db, home.ID)
+
+				homeForm := homeEditForm(home, "", pointMeta, ratings)
 				homeForm.Render(GetContext(r), w)
 				return
 			default:
@@ -858,6 +881,30 @@ func singleHomeHandler(db *gorm.DB) http.HandlerFunc {
 
 			success := success("Home deleted")
 			success.Render(GetContext(r), w)
+			return
+		}
+	}
+}
+
+func getHomeFactorRating(db *gorm.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "GET":
+			homeId := r.URL.Query().Get("homeId")
+			homeIdInt, err := strconv.Atoi(homeId)
+			if err != nil {
+				warning := warning("Invalid home ID")
+				warning.Render(GetContext(r), w)
+
+				return
+			}
+
+			homeFactorVoteList := GetHomeRatings(db, uint(homeIdInt))
+
+			home := GetHome(db, uint(homeIdInt))
+
+			homeFactorVoteListComp := factorVoteList(homeFactorVoteList, home)
+			homeFactorVoteListComp.Render(GetContext(r), w)
 			return
 		}
 	}
@@ -959,7 +1006,9 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 				homeForm.Render(GetContext(r), w)
 				return
 			case "edit":
-				homeForm := homeEditForm(home, msg, pointMeta)
+				ratings := GetHomeRatings(db, home.ID)
+
+				homeForm := homeEditForm(home, msg, pointMeta, ratings)
 				homeForm.Render(GetContext(r), w)
 				return
 			default:
@@ -1023,6 +1072,13 @@ func createHomeFactorRating(db *gorm.DB) http.HandlerFunc {
 			warn.Render(GetContext(r), w)
 			return
 		}
+
+		homeFactorVoteList := GetHomeRatings(db, uint(homeID))
+
+		home := GetHome(db, uint(homeID))
+
+		homeFactorVoteListComp := factorVoteList(homeFactorVoteList, home)
+		homeFactorVoteListComp.Render(GetContext(r), w)
 
 		// Render success message
 		success := success("Home factor rating created")

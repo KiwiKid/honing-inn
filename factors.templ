@@ -19,25 +19,34 @@ templ ratingsListView(ratings []HomeFactorRating){
     }
 }
 
-templ factorVoteList(factors []Factor, home Home){
-    <div class="grid grid-cols-5 gap-4">
+templ factorVoteList(factors []HomeFactorAndRating, home Home){
+    <div class="grid grid-cols-5 gap-4" target="this">
         for _, fact := range factors {
-            <div class="flex flex-col col-span-5"><h1>{ fact.Title}</h1></div>
-            for number := 1; number <= 5; number++ {
-            
-            <form hx-post="/homes-rating" class="flex flex-col items-center">
-                <input type="hidden" value={ fmt.Sprintf("%d", number) } name="stars"></input>
-                <input type="hidden" value={ fmt.Sprintf("%d", fact.ID) } name="factorId"></input>
-                <input type="hidden" value={ fmt.Sprintf("%d", home.ID) } name="homeId"></input>
-                
-                <button type="submit" class="w-2 text-yellow-500">
-                    for i := 1; i <= number; i++ {
-                        ★
-                    }
-                </button>
-            </form>
+            <div class="rating-container" style="display: flex; flex-direction: column;">
+                <h1>{ fact.Factor.Title }</h1>
+                <div class="button-row" style="display: flex; gap: 10px;">
+                    for number := 1; number <= 5; number++ {
+                    <form hx-post="/homes-rating" style="margin: 0;">
+                        <input type="hidden" value={ fmt.Sprintf("%d", number) } name="stars"></input>
+                        <input type="hidden" value={ fmt.Sprintf("%d", fact.Factor.ID) } name="factorId"></input>
+                        <input type="hidden" value={ fmt.Sprintf("%d", home.ID) } name="homeId"></input>
 
-            }
+
+                        <button type="submit"
+                            if fact.HomeFactorRating != nil && fact.HomeFactorRating.Stars == number {
+                                class="bg-green"
+                            }else {
+                                class="bg-blue"
+                            }
+                         >
+                            { fmt.Sprintf("%d", number) }
+                        </button>
+                    </form>
+                    }
+                </div>
+            </div>
+
+
         }
         @addFactor()
     </div>
@@ -45,6 +54,7 @@ templ factorVoteList(factors []Factor, home Home){
 
 
 templ addFactor(){
+    <details><summary>add new factor</summary>
     <form hx-post="/factor?viewMode=view" class="space-y-4" hx-target="this">
         <h3>add new factor</h3>
         <!-- Labeled input fields -->
@@ -59,6 +69,7 @@ templ addFactor(){
             <button type="button" class="form-button bg-gray-500 hover:bg-gray-600" onclick="location.reload();">Cancel</button>
         </div>
     </form>
+    </details>
 }
 
 templ editFactor(factor Factor, msg string){
