@@ -262,6 +262,15 @@ getMap(){
 
                   // Handle key press events for resize mode
                   document.addEventListener('keydown', function(event) {
+                    debugger
+                    const activeElement = document.activeElement;
+                    const isInputFocused = activeElement.tagName === 'INPUT' || 
+                           activeElement.tagName === 'TEXTAREA' || 
+                           activeElement.isContentEditable;
+
+                    // If an input or editable element is focused, return early to avoid triggering the event
+                    if (isInputFocused) return;
+
                     if (!resizeMode || !window.mapActor.imageOverlay) return;
 
                       switch (event.key) {

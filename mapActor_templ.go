@@ -36,8 +36,8 @@ func span() templ.Component {
 
 func mapActor() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_mapActor_21fe`,
-		Function: `function __templ_mapActor_21fe(){/**
+		Name: `__templ_mapActor_0015`,
+		Function: `function __templ_mapActor_0015(){/**
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Map} L 
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Marker} L.Marker
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').LatLng} L.LatLng
@@ -294,6 +294,15 @@ getMap(){
 
                   // Handle key press events for resize mode
                   document.addEventListener('keydown', function(event) {
+                    debugger
+                    const activeElement = document.activeElement;
+                    const isInputFocused = activeElement.tagName === 'INPUT' || 
+                           activeElement.tagName === 'TEXTAREA' || 
+                           activeElement.isContentEditable;
+
+                    // If an input or editable element is focused, return early to avoid triggering the event
+                    if (isInputFocused) return;
+
                     if (!resizeMode || !window.mapActor.imageOverlay) return;
 
                       switch (event.key) {
@@ -1120,7 +1129,7 @@ handleMapMoveEnd(e){
 
       
 }`,
-		Call:       templ.SafeScript(`__templ_mapActor_21fe`),
-		CallInline: templ.SafeScriptInline(`__templ_mapActor_21fe`),
+		Call:       templ.SafeScript(`__templ_mapActor_0015`),
+		CallInline: templ.SafeScriptInline(`__templ_mapActor_0015`),
 	}
 }
