@@ -10,6 +10,7 @@ import (
 // DBInit initializes the database and creates the tables
 func DBInit(config EnvConfig) (*gorm.DB, error) {
 
+	
 	db, err := gorm.Open(sqlite.Open(config.DBUrl), &gorm.Config{})
 	if err != nil {
 		log.Fatal("failed to connect database:", err)
@@ -148,6 +149,21 @@ func GetFactors(db *gorm.DB) []Factor {
 		factors = []Factor{}
 	}
 	return factors
+}
+
+func DeleteFactor(db *gorm.DB, id uint) (Factor, error) {
+	var factor Factor
+	err := db.First(&factor, id)
+	if err.Error != nil {
+		return factor, err.Error
+	}
+
+	delErr := db.Delete(&factor)
+	if delErr != nil {
+		log.Printf("failed to delete factor:", delErr)
+		return factor, delErr.Error
+	}
+	return factor, nil
 }
 
 func GetImgOverlay(db *gorm.DB, id int) ImageOverlay {

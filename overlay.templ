@@ -9,10 +9,10 @@ templ imageOverlayPopup(){
 }
 
 templ resizeModeWords(){
-  <div id="resizeModeIndicator" class="resize-mode text-sm text-gray-500 bg-yellow-100 p-2 rounded-md" >
-      Resize Mode Active - double click to exit resize 
-    </div>
-    <div>
+  <div id="resizeModeIndicator" style="line-height:12px;" class="resize-mode text-sm text-gray-500 bg-yellow-100 p-2 rounded-md" >
+    <div hx-get="/image-overlay?viewMode=controls" hx-swap="outerHTML" hx-trigger="click, every 1s"></div>
+      <div>
+      Resize Mode Active - double click to exit resize <br/>
       (WASD to move)
     </div>
     <div>
@@ -27,12 +27,13 @@ templ resizeModeWords(){
        <div>
        (x to remove image)
        </div>
+    </div>
 }
 
 templ imageOverlayScript(){
       <script>
     //  document.addEventListener('DOMContentLoaded', function () {
-        const buttons = document.querySelectorAll('.img-edit-button');
+      /*  const buttons = document.querySelectorAll('.img-edit-button');
         
         buttons.forEach(function(button) {
           // Retrieve data attributes
@@ -47,43 +48,49 @@ templ imageOverlayScript(){
           htmx.process(button)
 
           
-        });
+        });*/
   //    });
     </script>
 }
 
-templ imageOverlayControls(images []ImageOverlay){
-      <div class="flex flex-col">
-        for _, image := range images {
-          <div>
-          <button class="img-edit-button" hx-target="#image-form" hx-swap="outerHTML" data-img-name={image.Name} data-img-id={ fmt.Sprintf("%d", image.ID) }> 
-            {fmt.Sprintf("Edit %s", image.Name)}
-          </button>
-          </div>
-        }
-        </div>
+templ addImage(){
     <form hx-post="/image-overlay" hx-encoding="multipart/form-data" hx-swap="outerHTML" id="image-form" class="flex flex-col items-center space-y-6 p-6 bg-gray-100 bg-white rounded-lg shadow-md">
         <div class="leaflet-control-custom flex flex-col items-center p-4 ">
+        <div>Upload New Image</div>
         <input type="hidden" name="imgBounds" id="imgBounds" />
           <label for="file-input" class="text-gray-700 font-semibold">
-          <div>
-              New Image
-              </div>
               <div>
                   <input type="file" id="file-input" name="fileInput" accept="image/*" class="w-full text-gray-600" required/>
               </div>
           </label>
       </div>
 
-    @resizeModeWords()
-
     <button type="submit" class="px-6 py-2 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600">
       Submit
     </button>
   </form>
+}
+
+templ imageOverlayControls(images []ImageOverlay){
+      <div class="flex flex-col">
+      <form hx-trigger="change" hx-get="/image-overlay?viewMode=edit" hx-target="#image-form" hx-swap="outerHTML">
+        <select 
+          name="imageId" 
+          class="block w-full mt-1 p-2 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"          
+          hx-vals="{'imageId': this.value}">
+          for _, image := range images {
+            <option value={fmt.Sprintf("%d", image.ID)} data-img-name={image.Name} data-img-id={ fmt.Sprintf("%d", image.ID) }>{image.Name}</option>
+          }
+          <option selected="selected">---Edit Image---</option>
+        </select>
+      </form>
+      
+      <div id="image-form"></div>
+        </div>
+        
+    @addImage()
     <script>
-        const inputs = document.querySelector('#file-input')
-        inputs.addEventListener('change', window.mapActor.handleNewMapImage)
+        document.querySelector('#file-input').addEventListener('change', window.mapActor.handleNewMapImage)
     </script>
 
 
@@ -113,7 +120,6 @@ templ imageOverlayEdit(image ImageOverlay, msg string){
     </div>
   <br/>
 
-  @resizeModeWords()
     <div>
       <input type="hidden" name="ID" value={ fmt.Sprintf("%d", image.ID)} />
       <label>Img Bounds <input type="text" name="imgBounds" id="imgBounds" value={image.Bounds} required /></label>
@@ -164,11 +170,10 @@ templ uploadImageOverlayKeyForm(image ImageOverlay){
   </div>
         </details>
         } else {
+          <details><summary>New Key Image</summary>
+
           <input type="hidden" name="ID" value={ fmt.Sprintf("%d", image.ID) } />
            <label for="file-input" class="text-gray-700 font-semibold">
-           <div>
-              New Key Image
-              </div>
               <div>
                   <input type="file" id="file-input" name="fileInput" accept="image/*" class="w-full text-gray-600" required/>
                        </div>
@@ -177,6 +182,7 @@ templ uploadImageOverlayKeyForm(image ImageOverlay){
 
               <button type="submit">upload key image</button>
   </div>
+  </details>
 
         }
 

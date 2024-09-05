@@ -2,28 +2,48 @@ package main
 
 import (
     "fmt"
+    "github.com/dustin/go-humanize"
 )
+templ pointListLoad(){
+    <div hx-get="homes?viewMode=view" hx-trigger="revealed">loading points...</div>
+}
+templ pointList(homes []Home, msg string){
+    <div>
+     if len(msg) > 0 {
+        <div class="text-red-500">{ msg }</div>
+    }
+    for _, h := range homes {
+        @point(h)
+    }
+    </div>
+}
+
+templ point(home Home){
+    <div>{ fmt.Sprintf("%+v", home) }</div>
+}
 
 templ homeView(home Home, msg string, pointMeta PointMeta, ratings []HomeFactorAndRating) {
-    <div class="space-y-4" hx-target="this"> 
+    <div class="space-y-4" hx-target="this">
         <!-- Display message -->
          if len(msg) > 0 {
             <div class="text-red-500">{ msg }</div>
         }
-
-        <div>
-            <div class="text-4xl text-gray-900">{ home.Title }</div>
+    
+        <div style="font-size: 2rem">
+            <a  href={ templ.SafeURL(home.Url) }>{home.Title}</a>
         </div>
 
+        if len(home.ImageUrl) > 0 {
         <div>
-            <a href={ templ.SafeURL(home.Url) }>{home.Url}</a>
+            <img width="280px" src={ home.ImageUrl }/>
         </div>
+        }
 
         <div>
             <div class="text-gray-900">{ home.Notes }</div>
         </div>
 
-        <div>
+        <div style="float: right">
             <button hx-get={ fmt.Sprintf("/homes/%d?viewMode=edit", home.ID) } class="btn-edit">Edit</button>
         </div>
         @ratingListView(ratings)
@@ -40,10 +60,6 @@ templ homeForm(pointMeta PointMeta, lat string, lng string, msg string){
     <input type="hidden" name="lat" value={ fmt.Sprintf("%v", lat) }>
     <input type="hidden" name="lng" value={ fmt.Sprintf("%v", lng) }>
 
-    <div>
-        <label for="url" class="block text-sm font-medium text-gray-700">URL</label>
-        <input type="text" required="required" name="url" id="url" class="form-input mt-1 block w-full">
-    </div>
     <!-- Select dropdown -->
     <div>
         <label for="pointType" class="block text-sm font-medium text-gray-700">Point Type</label>
@@ -67,9 +83,74 @@ templ homeForm(pointMeta PointMeta, lat string, lng string, msg string){
 </form>
 
 }
+
+templ populatedMetaFields(meta *SiteMeta){
+    if meta != nil {
+        
+       @tick("got meta data")
+        @urlInput(meta.Url, meta.Title, true)
+        <div id="title-box" hx-swap-oob="true" hx-swap="outerHTML">
+            <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
+            <input  type="text" name="title" id="title" value={ meta.Title } class="form-input mt-1 block w-full">
+        </div>
+        <div id="notes-box" hx-swap-oob="true" hx-swap="outerHTML">
+            <label for="notes" class="block text-sm font-medium text-gray-700">Notes</label>
+            <input  type="text" name="notes" id="notes" value={ meta.Description } class="form-input mt-1 block w-full">
+        </div>
+        @imageInput(meta.MetaImage, true)
+    }else{
+        { fmt.Sprintf("%+v", meta) }
+    }
+
+}
+
+templ urlInput(url string, title string, oob bool){
+    <div id="url-box" style="padding-bottom: 10px"
+    if oob {
+        hx-swap-oob="true"
+    }
+    >
+        
+            <label for="url" class="block text-sm font-medium text-gray-700">
+                if len(title) == 0 {
+                    @pending()
+                } else {
+                    @tick("got title")
+                }
+            URL
+                
+            <input 
+            if len(title) == 0 {
+                    hx-post="/homes/url"
+                    hx-trigger="blur"
+                    hx-target="#url-box"
+                    hx-swap="outerHTML"
+            }
+               type="text" name="url" id="url" value={ url } class="form-input mt-1 block w-full">
+            </label>
+        </div>
+}
+
+templ imageInput(url string, oob bool){
+    <div id="img-box"
+        if oob {
+            hx-swap-oob="true"
+        }
+    >
+        <label for="imageUrl" class="block text-sm font-medium text-gray-700">Image</label>
+        <input type="text" name="imageUrl" id="imageUrl" value={ url} class="form-input mt-1 block w-full">
+        <img width="280px" 
+            if len(url) == 0 {
+                height="100px"
+            }
+            src={ url }/>
+    </div>
+}
+
+
 templ homeEditForm(home Home, msg string, pointMeta PointMeta, ratings []HomeFactorAndRating){
-    <div hx-target="this"> 
-    <form hx-post="/homes?viewMode=view" class="space-y-4" >homeEditForm
+    <div hx-target="this">
+    <form hx-post="/homes?viewMode=view" class="space-y-4 homeEditForm" >
         if len(msg) > 0 {
             <div class="text-red-500">{msg}</div>
         }
@@ -79,32 +160,32 @@ templ homeEditForm(home Home, msg string, pointMeta PointMeta, ratings []HomeFac
         <input type="hidden" name="lat" value={ fmt.Sprintf("%v", home.Lat) }>
         <input type="hidden" name="lng" value={ fmt.Sprintf("%v", home.Lng) }>
 
+
+
+        @urlInput(home.Url, home.Title, false)
+
+
         <!-- Labeled input fields -->
-        <div>
+        <div id="title-box">
             <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
-            <input type="text" name="title" id="title" value={ home.Title } class="form-input mt-1 block w-full">
+            <input  type="text" name="title" id="title" value={ home.Title } class="form-input mt-1 block w-full">
         </div>
 
-        <div>
-            <label for="url" class="block text-sm font-medium text-gray-700">URL</label>
-            <input type="text" name="url" id="url" value={ home.Url } class="form-input mt-1 block w-full">
-        </div>
 
-        <div>
+        <div id="notes-box">
             <label for="notes" class="block text-sm font-medium text-gray-700">Notes</label>
             <input type="text" name="notes" id="notes" value={ home.Notes } class="form-input mt-1 block w-full">
         </div>
 
-        <!-- Select dropdown -->
-        <div>
-            <label for="pointType" class="block text-sm font-medium text-gray-700">Point Type</label>
-            <select name="pointType" id="pointType" class="form-input mt-1 block w-full">
-                for _, h := range pointMeta.types {
-                    <option value={ h.Name }>{ h.Name }</option>
-                }
-            </select>
-        </div>
+        @imageInput(home.ImageUrl, false)
 
+
+        if !home.RemoveRequestAt.IsZero(){
+            <div style="padding: 5px;">
+            ({ humanize.Time(home.RemoveRequestAt) })
+        </div>
+        }
+         
         <!-- Buttons -->
         <div class="flex space-x-4">
             <button type="submit" class="form-button">Save</button>
@@ -114,19 +195,6 @@ templ homeEditForm(home Home, msg string, pointMeta PointMeta, ratings []HomeFac
 
         
     </form>
-    @factorVoteList(ratings, home)
+    @factorVoteList(ratings, home, "")
     </div>
-}
-
-
-templ ratingListView(ratingWithFactors []HomeFactorAndRating){
-
-    for _, r := range ratingWithFactors {
-            <div>
-                if r.HomeFactorRating != nil {
-                <!-- Display Factor and Rating Information -->
-                {fmt.Sprintf("%s - %d", r.Factor.Title, r.HomeFactorRating.Stars)}
-                }
-            </div>
-    }
 }

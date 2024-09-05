@@ -115,7 +115,7 @@ func mapperProcessView(meta MapMeta, processingMeta MapProcessingMeta) templ.Com
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><div data-tile=\"EsriWorldImagery\" data-max-zoom=\"19\" data-min-zoom=\"5\" data-default></div><div data-tile=\"OpenStreetMap\"></div><table id=\"map-container\"><div id=\"info\" class=\"leaflet-bar leaflet-control infobox\"><span class=\" zoom-level\" id=\"zoom-level\"></span></div></table></div></body>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><div data-tile=\"EsriWorldImagery\" data-max-zoom=\"19\" data-min-zoom=\"5\" data-default></div><div data-tile=\"OpenStreetMap\"></div><table id=\"map-container\"></table></div></body>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

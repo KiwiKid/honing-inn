@@ -102,7 +102,7 @@ func mapper(meta MapMeta) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><div data-tile=\"EsriWorldImagery\" data-max-zoom=\"19\" data-min-zoom=\"5\" data-default></div><div data-tile=\"OpenStreetMap\"></div><table id=\"map-container\"><div id=\"info\" class=\"leaflet-bar leaflet-control infobox\"><span class=\" zoom-level\" id=\"zoom-level\"></span></div><div hx-get=\"/shapes?mode=all\" hx-trigger=\"revealed\">loading shapes..</div></table></div></body>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><div data-tile=\"EsriWorldImagery\" data-max-zoom=\"19\" data-min-zoom=\"5\" data-default></div><div data-tile=\"OpenStreetMap\"></div><table id=\"map-container\"><div hx-get=\"/shapes?mode=all\" hx-trigger=\"revealed\">loading shapes..</div></table></div></body>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

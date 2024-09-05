@@ -15,12 +15,7 @@ templ mapper(meta MapMeta) {
      <div id="map" class="map" data-meta={ templ.JSONString(meta) } data-center={ fmt.Sprintf("[%f, %f]", meta.Lat, meta.Lng) } data-zoom={ fmt.Sprintf("%d", meta.Zoom)}>
         <div data-tile="EsriWorldImagery" data-max-zoom="19" data-min-zoom="5" data-default></div>
             <div data-tile="OpenStreetMap"></div>
-            <table id="map-container" >
-               
-                <div id="info" class="leaflet-bar leaflet-control infobox" >
-                    
-                    <span class=" zoom-level" id="zoom-level"></span>
-                </div>               
+            <table id="map-container" >         
                 <div hx-get="/shapes?mode=all" hx-trigger="revealed">loading shapes..</div>
                
             </table>

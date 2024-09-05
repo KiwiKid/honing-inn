@@ -1,12 +1,12 @@
-  # fly.toml app configuration file generated for honing-inn on 2024-08-17T14:03:51+12:00
-  #
-  # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-  #
+# fly.toml app configuration file generated for honing-inn on 2024-09-05T18:14:58+12:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-  app = 'honing-inn'
-  primary_region = 'syd'
+app = 'honing-inn'
+primary_region = 'syd'
 
-  [build]
+[build]
 
   [env]
     PORT = '8080'
@@ -14,19 +14,19 @@
     PREVIEW_ENV = "true"
     IMAGE_DIR = "/mnt/volume/images"
 
-  [http_service]
-    internal_port = 8080
-    force_https = true
-    auto_stop_machines = 'stop'
-    auto_start_machines = true
-    min_machines_running = 0
-    processes = ['app']
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
 
-  [[vm]]
-    memory = '1gb'
-    cpu_kind = 'shared'
-    cpus = 1
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
 
-  [mounts]
-    source = "sqlite3_volume"
-    destination = "/mnt/volume"
+[mounts]
+  source = "sqlite_volume_3"
+  destination = "/mnt/volume"

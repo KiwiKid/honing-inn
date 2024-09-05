@@ -1,0 +1,5 @@
+# flyctl launch added from .gitignore
+**/tmp/**/*
+**/tmp/images
+**/tmp/build-errors.log
+fly.toml

@@ -4,23 +4,45 @@ import (
     "fmt"
 )
 
+templ factorListLoad(){
+    <div hx-get="/factors" hx-trigger="revealed" hx-swap="outerHTML">Loading factors...</div>
+}
+
 templ factorList(factors []Factor){
     <div>
+        <div>Create factors to rate for each point</div>
+
     for _, f := range factors {
-        <div>{ fmt.Sprintf("%+v", f)} </div>
+        <div>{ fmt.Sprintf("%s", f.Title)} <button hx-delete={ fmt.Sprintf("/factors/%d", f.ID)} hx-target={ `div[data-mode="factor"]` }  hx-confirm="are you sure?">Delete</button> </div>
     }
     </div>
     @addFactor()
 }
 
-templ ratingsListView(ratings []HomeFactorRating){
-    for _, r := range ratings {
-        <div>{fmt.Sprintf("%+v", r)}</div>
+templ ratingListView(ratingWithFactors []HomeFactorAndRating){
+
+    for _, r := range ratingWithFactors {
+        <div style="margin: 8px 0 8px 0;"  style="max-height: 256px; overflow-y: auto;">
+            if r.HomeFactorRating != nil {
+                <!-- Title on one row -->
+                <div style="font-size: 14px; font-weight: 600; color: #2d3748;">{ r.Factor.Title }</div>
+                
+                <!-- Rating (stars) on the next row -->
+                <div style="display: flex; gap: 4px; margin-top: 4px;">
+                    for i := 0; i < r.HomeFactorRating.Stars; i++ {
+                        @star()
+                    }
+                </div>
+            }
+        </div>
     }
 }
 
-templ factorVoteList(factors []HomeFactorAndRating, home Home){
-    <div class="grid grid-cols-5 gap-4" target="this">
+templ factorVoteList(factors []HomeFactorAndRating, home Home, msg string){
+    <div class="grid grid-cols-5 gap-4 overflow-y-auto max-h-32"  style="max-height: 256px; overflow-y: auto;" hx-target="this">
+        if len(msg) > 0 {
+            @success(msg)
+        }
         for _, fact := range factors {
             <div class="rating-container" style="display: flex; flex-direction: column;">
                 <h1>{ fact.Factor.Title }</h1>
@@ -34,9 +56,9 @@ templ factorVoteList(factors []HomeFactorAndRating, home Home){
 
                         <button type="submit"
                             if fact.HomeFactorRating != nil && fact.HomeFactorRating.Stars == number {
-                                class="bg-green"
+                                style="background: green"
                             }else {
-                                class="bg-blue"
+                                style="background: blue"
                             }
                          >
                             { fmt.Sprintf("%d", number) }
@@ -48,14 +70,13 @@ templ factorVoteList(factors []HomeFactorAndRating, home Home){
 
 
         }
-        @addFactor()
+        @manageLink()
     </div>
 }
 
 
 templ addFactor(){
-    <details><summary>add new factor</summary>
-    <form hx-post="/factor?viewMode=view" class="space-y-4" hx-target="this">
+    <form hx-post="/factors?viewMode=view" hx-target={ `div[data-mode="factor"]` } class="space-y-4">
         <h3>add new factor</h3>
         <!-- Labeled input fields -->
         <div>
@@ -69,27 +90,27 @@ templ addFactor(){
             <button type="button" class="form-button bg-gray-500 hover:bg-gray-600" onclick="location.reload();">Cancel</button>
         </div>
     </form>
-    </details>
 }
 
 templ editFactor(factor Factor, msg string){
-     <form hx-post="/factor" class="space-y-4" hx-target="this">
+     <form hx-post="/factors" class="space-y-4" hx-target="this">
         if len(msg) > 0 {
             <div class="text-red-500">{msg}</div>
         }
-
+        <input type="hidden" name="ID" value={ fmt.Sprintf("%d", factor.ID)} />
         
         <!-- Labeled input fields -->
         <div>
             <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
-            <input type="text" name="title" id="title" class="form-input mt-1 block w-full">
+            <input type="text" name="title" id="title" value={factor.Title} required class="form-input mt-1 block w-full"/>
         </div>
 
         <!-- Buttons -->
         <div class="flex space-x-4">
             <button type="submit" class="form-button">Save</button>
-            <button type="button" class="form-button bg-red-500 hover:bg-red-600" hx-delete={ fmt.Sprintf("/factor/%d", factor.ID) } hx-confirm="are you sure you want to delete this factor?">Delete</button>
             <button type="button" class="form-button bg-gray-500 hover:bg-gray-600" onclick="location.reload();">Cancel</button>
+            <button type="button" class="form-button bg-red-500 hover:bg-red-600" hx-confirm="Are you sure you want to delete this factor?" hx-delete={ fmt.Sprintf("/factors/%d", factor.ID) } hx-target={ `div[data-mode="factor"]` }  hx-confirm="are you sure you want to delete this factor?">Delete</button>
+
         </div>
 
     

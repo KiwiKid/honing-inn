@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -11,8 +12,11 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strconv"
+	"syscall"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -29,13 +33,32 @@ func startServer(r *chi.Mux, portStr string) {
 		Handler: r,
 	}
 
+	// Channel to listen for interrupt signals
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
 	// Start the server in a goroutine
-	log.Printf("Starting server on %s", portStr)
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("Could not listen on %s: %v\n", portStr, err)
-	} else {
-		log.Printf("Server started on %s", portStr)
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Could not listen on %s: %v\n", portStr, err)
+		}
+	}()
+	log.Printf("Server started on %s", portStr)
+
+	// Block until we receive an interrupt signal
+	<-stop
+	log.Println("Shutting down server...")
+
+	// Create a context with timeout to allow graceful shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Attempt to gracefully shutdown the server
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
 	}
+
+	log.Println("Server exiting")
 }
 
 type EnvConfig struct {
@@ -77,9 +100,23 @@ func main() {
 	if err != nil {
 		log.Fatal("ERROR: failed to connect to database:", err)
 	}
+	defer func() {
+		sqlDB, err := db.DB()
+		if err != nil {
+			log.Fatalf("ERROR: could not get database object from Gorm: %v", err)
+		}
+		if err := sqlDB.Close(); err != nil {
+			log.Fatalf("ERROR: failed to close database: %v", err)
+		}
+		log.Println("Database connection closed")
+	}()
+
+	osmClient := NewOSMClient()
 
 	// Create a new router
 	r := chi.NewRouter()
+
+	r.Get("/mapmanager", mapManagerHandler(db))
 
 	// Define routes with method-specific handlers
 	r.Get("/shapes", shapeHandler(db))
@@ -101,12 +138,17 @@ func main() {
 	r.Post("/homes-rating", createHomeFactorRating(db))
 
 	r.Post("/factors", createFactor(db))
+
 	r.Get("/homes/{homeId:[0-9]+}", singleHomeHandler(db))
 	r.Delete("/homes/{homeId:[0-9]+}", singleHomeHandler(db))
 
 	r.Get("/homes", homeHandler(db))
-	r.Post("/homes", homeHandler(db)) // Assuming POST for creating a home
+	r.Post("/homes", homeHandler(db))
+	r.Post("/homes/url", homeUrlHandler(db)) // Assuming POST for creating a home
+
 	r.Get("/", mapHandler(db))
+	r.Get("/controls", mapControlsHandler(db))
+	r.Get("/address", geocodeAddressHandler(osmClient))
 
 	r.Get("/process", mapProcessView(db, envConfig))
 	r.Post("/process", mapProcessHandler(db, envConfig))
@@ -114,8 +156,9 @@ func main() {
 	r.Get("/delete-all", deleteHandler(db))
 	r.Delete("/delete-all", deleteHandler(db))
 
-	r.Get("/factor", factorHandler(db))
-	r.Post("/factor", factorHandler(db))
+	r.Get("/factors", factorHandler(db))
+	r.Post("/factors", factorHandler(db))
+	r.Delete("/factors/{factorId:[0-9]+}", factorHandler(db))
 
 	port := os.Getenv("PORT")
 	if len(port) == 0 {
@@ -177,6 +220,34 @@ func mapHandler(db *gorm.DB) http.HandlerFunc {
 
 }
 
+func mapControlsHandler(db *gorm.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "GET":
+			meta := GetPointMeta(db)
+
+			mapControls := mapControls(meta, "navigate")
+			mapControls.Render(GetContext(r), w)
+			return
+		default:
+			warn := warning("Method not allowed")
+			warn.Render(GetContext(r), w)
+			return
+		}
+	}
+}
+
+func mapManagerHandler(db *gorm.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		meta := GetPointMeta(db)
+
+		mapManager := mapManager(meta)
+		mapManager.Render(GetContext(r), w)
+		return
+
+	}
+}
+
 func imageHandler(imageDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Get the image ID from the URL parameter
@@ -189,7 +260,8 @@ func imageHandler(imageDir string) http.HandlerFunc {
 
 		// Check if the file exists
 		if _, err := os.Stat(imagePath); os.IsNotExist(err) {
-			http.Error(w, "Image not found", http.StatusNotFound)
+			warning := warning(fmt.Sprintf("Image not found - %s", imagePath))
+			warning.Render(GetContext(r), w)
 			return
 		}
 
@@ -426,7 +498,8 @@ func imageOverlayHandler(db *gorm.DB, envConfig EnvConfig) http.HandlerFunc {
 			return
 
 		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			warning := warning("Method not allowed")
+			warning.Render(GetContext(r), w)
 			return
 		}
 	}
@@ -437,6 +510,7 @@ func imageOverlayHandler(db *gorm.DB, envConfig EnvConfig) http.HandlerFunc {
 
 func healthHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("💊 Health check  💊  at %s", time.Now().Format(time.RFC3339))
 		success := success("Healthy")
 		success.Render(GetContext(r), w)
 	}
@@ -515,7 +589,8 @@ func mapProcessHandler(db *gorm.DB, envConfig EnvConfig) http.HandlerFunc {
 		var req MapRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			warning := warning(fmt.Sprintf("Error decoding request: %+v", err))
+			warning.Render(GetContext(r), w)
 			return
 		}
 		log.Printf("MAP PROCESS HANDLER %+v", req)
@@ -523,10 +598,8 @@ func mapProcessHandler(db *gorm.DB, envConfig EnvConfig) http.HandlerFunc {
 		// Pass the image data to the processor
 		result, err := classifyImageWithHuggingFace(req, envConfig)
 		if err != nil {
-			warning := fmt.Sprintf("Error classifying image: %+v", err)
-			log.Printf(warning)
-
-			http.Error(w, warning, http.StatusInternalServerError)
+			warning := warning(fmt.Sprintf("Error classifying image: %+v", err))
+			warning.Render(GetContext(r), w)
 			return
 		}
 
@@ -829,7 +902,8 @@ func singleHomeHandler(db *gorm.DB) http.HandlerFunc {
 			// Convert homeIdStr to the appropriate type
 			homeId, err := strconv.Atoi(homeIdStr)
 			if err != nil {
-				http.Error(w, "Invalid homeId", http.StatusBadRequest)
+				warning := warning(fmt.Sprintf("Invalid home ID - %s", homeIdStr))
+				warning.Render(GetContext(r), w)
 				return
 			}
 
@@ -842,6 +916,7 @@ func singleHomeHandler(db *gorm.DB) http.HandlerFunc {
 			log.Printf("\n\nviewviewviewview mode %s", viewMode)
 			switch viewMode {
 			case "view":
+				log.Printf("===============home - view")
 
 				ratings := GetHomeRatings(db, home.ID)
 				for _, rating := range ratings {
@@ -852,13 +927,15 @@ func singleHomeHandler(db *gorm.DB) http.HandlerFunc {
 				homeForm.Render(GetContext(r), w)
 				return
 			case "edit":
+				log.Printf("=============home - edit")
+
 				ratings := GetHomeRatings(db, home.ID)
 
 				homeForm := homeEditForm(home, "", pointMeta, ratings)
 				homeForm.Render(GetContext(r), w)
 				return
 			default:
-				warn := warning("viewMode not allowed (edit,view)")
+				warn := warning(fmt.Sprintf("viewMode not allowed [%s] (edit,view)", viewMode))
 				warn.Render(GetContext(r), w)
 				return
 			}
@@ -867,7 +944,8 @@ func singleHomeHandler(db *gorm.DB) http.HandlerFunc {
 			idStr := chi.URLParam(r, "homeId")
 			id, err := strconv.Atoi(idStr)
 			if err != nil {
-				http.Error(w, "Invalid home ID", http.StatusBadRequest)
+				warning := warning(fmt.Sprintf("Invalid home ID - %s", idStr))
+				warning.Render(GetContext(r), w)
 				return
 			}
 
@@ -875,7 +953,8 @@ func singleHomeHandler(db *gorm.DB) http.HandlerFunc {
 
 			result := db.Delete(&home)
 			if result.Error != nil {
-				http.Error(w, "Failed to delete home", http.StatusInternalServerError)
+				warning := warning(fmt.Sprintf("Failed to delete home - %s", result.Error.Error()))
+				warning.Render(GetContext(r), w)
 				return
 			}
 
@@ -903,7 +982,7 @@ func getHomeFactorRating(db *gorm.DB) http.HandlerFunc {
 
 			home := GetHome(db, uint(homeIdInt))
 
-			homeFactorVoteListComp := factorVoteList(homeFactorVoteList, home)
+			homeFactorVoteListComp := factorVoteList(homeFactorVoteList, home, "")
 			homeFactorVoteListComp.Render(GetContext(r), w)
 			return
 		}
@@ -913,6 +992,7 @@ func getHomeFactorRating(db *gorm.DB) http.HandlerFunc {
 // createHome handler with db dependency injection
 func homeHandler(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		log.Print("==== Home Handler ====")
 		switch r.Method {
 		case "GET":
 			lat := r.URL.Query().Get("lat")
@@ -947,7 +1027,8 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 		case "POST":
 			log.Printf("POST request received")
 			if err := r.ParseForm(); err != nil {
-				http.Error(w, "Unable to parse form data", http.StatusBadRequest)
+				warning := warning(fmt.Sprintf("Unable to parse form data - POST %+v", err))
+				warning.Render(GetContext(r), w)
 				return
 			}
 
@@ -958,6 +1039,7 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 			pointType := r.FormValue("pointType")
 			notes := r.FormValue("notes")
 			url := r.FormValue("url")
+			imageUrl := r.FormValue("imageUrl")
 
 			// Convert latitude and longitude to float64
 			lat, err := strconv.ParseFloat(latStr, 64)
@@ -982,6 +1064,19 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 				Title:     title,
 				Notes:     notes,
 				Url:       url,
+				ImageUrl:  imageUrl,
+			}
+
+			removeRequestAt := r.FormValue("removeRequestAt")
+			if len(removeRequestAt) != 0 {
+				removeRequestAtTime, err := time.Parse("2006-01-02", removeRequestAt)
+				if err != nil {
+					warning := warning(fmt.Sprintf("Invalid removeRequestAt value - %+v", err))
+					warning.Render(GetContext(r), w)
+					return
+				} else {
+					home.RemoveRequestAt = removeRequestAtTime
+				}
 			}
 
 			var msg string
@@ -1000,23 +1095,78 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 
 			switch viewMode {
 			case "view":
-				ratings := GetHomeRatings(db, home.ID)
+				idStr := r.URL.Query().Get("id")
+				if len(idStr) == 0 {
+					homes := GetHomes(db)
+					pointList := pointList(homes, "")
 
+					pointList.Render(GetContext(r), w)
+					return
+				}
+				id, err := strconv.Atoi(idStr)
+				if err != nil {
+					http.Error(w, "Invalid home ID", http.StatusBadRequest)
+					return
+				}
+				ratings := GetHomeRatings(db, uint(id))
+
+				log.Printf("===============home - view")
 				homeForm := homeView(home, msg, pointMeta, ratings)
 				homeForm.Render(GetContext(r), w)
 				return
 			case "edit":
+
+				log.Printf("=============home - edit")
 				ratings := GetHomeRatings(db, home.ID)
 
 				homeForm := homeEditForm(home, msg, pointMeta, ratings)
 				homeForm.Render(GetContext(r), w)
 				return
 			default:
+
+				log.Printf("home - default")
 				warn := warning("viewMode not allowed (edit,view)")
 				warn.Render(GetContext(r), w)
 				return
 			}
 
+		default:
+			warn := warning("Method not allowed")
+			warn.Render(GetContext(r), w)
+			return
+		}
+	}
+}
+
+func homeUrlHandler(db *gorm.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "POST":
+			if err := r.ParseForm(); err != nil {
+				warn := warning("Unable to parse form data")
+				warn.Render(GetContext(r), w)
+				return
+			}
+
+			// Extract form fields
+			url := r.FormValue("url")
+
+			if len(url) == 0 {
+				urlIn := urlInput("", "", false)
+				urlIn.Render(GetContext(r), w)
+				return
+			}
+
+			metaTags, err := GetWebMeta(url)
+			if err != nil {
+				warn := warning(fmt.Sprintf("Unable to get web meta %v", err))
+				warn.Render(GetContext(r), w)
+				return
+			}
+
+			success := populatedMetaFields(metaTags)
+			success.Render(GetContext(r), w)
+			return
 		default:
 			warn := warning("Method not allowed")
 			warn.Render(GetContext(r), w)
@@ -1077,12 +1227,12 @@ func createHomeFactorRating(db *gorm.DB) http.HandlerFunc {
 
 		home := GetHome(db, uint(homeID))
 
-		homeFactorVoteListComp := factorVoteList(homeFactorVoteList, home)
+		homeFactorVoteListComp := factorVoteList(homeFactorVoteList, home, fmt.Sprintf("Home factor rating created - %d * for %d", stars, factorID))
 		homeFactorVoteListComp.Render(GetContext(r), w)
-
+		return
 		// Render success message
-		success := success("Home factor rating created")
-		success.Render(GetContext(r), w)
+		//success := success()
+		//uccess.Render(GetContext(r), w)
 	}
 }
 
@@ -1141,7 +1291,7 @@ func factorHandler(db *gorm.DB) http.HandlerFunc {
 			title := r.FormValue("title")
 			displayOrder := r.FormValue("displayOrder")
 
-			id := r.FormValue("id")
+			id := r.FormValue("ID")
 			if len(id) == 0 {
 				factor := Factor{
 					Title:        title,
@@ -1157,7 +1307,7 @@ func factorHandler(db *gorm.DB) http.HandlerFunc {
 					return
 				}
 
-				success := success("Factor created")
+				success := factorListLoad()
 				success.Render(GetContext(r), w)
 				return
 
@@ -1183,14 +1333,40 @@ func factorHandler(db *gorm.DB) http.HandlerFunc {
 			// Save the Factor object to the database
 			result := db.Save(&factor)
 			if result.Error != nil {
-				warn := warning("Failed to save factor")
+				warn := warning("Failed to update factor")
 				warn.Render(GetContext(r), w)
 				return
 			}
 
-			success := success("Factor created")
+			success := success("Factor updated")
 			success.Render(GetContext(r), w)
 			return
+		case "DELETE":
+			idStr := chi.URLParam(r, "factorId")
+			if idStr == "" {
+				warning := warning("Factor ID not provided")
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			id, err := strconv.Atoi(idStr)
+			if err != nil {
+				warning := warning("Invalid factor ID")
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			_, dErr := DeleteFactor(db, uint(id))
+			if dErr != nil {
+				warning := warning("Failed to delete factor")
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			success := factorListLoad()
+			success.Render(GetContext(r), w)
+			return
+
 		default:
 			warn := warning("Method not allowed")
 			warn.Render(GetContext(r), w)

@@ -27,7 +27,7 @@
           ];
           shellHook = ''
             echo "Building the Go project..."
-            cd ~/mine/honing-in
+            cd ~/mine/honing-inn
             git config user.name $GIT_AUTHOR_USER
             git config user.email $GIT_AUTHOR_EMAIL
             export DATABASE_URL=./tmp/dev.db
@@ -44,7 +44,7 @@
           ];
           shellHook = ''
             echo "Building the Go project..."
-            cd ~/mine/honing-in
+            cd ~/mine/honing-inn
             fly deploy
           '';
         };
@@ -105,7 +105,7 @@
             pkgs.golint
           ];
           shellHook = ''
-            cd ~/mine/honing-in
+            cd ~/mine/honing-inn
           '';
         };
 

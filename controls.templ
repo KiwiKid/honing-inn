@@ -1,0 +1,44 @@
+package main
+
+import (
+    "fmt"
+)
+
+var btnStyleS = "width: 100%;  color: #374151; font-size: 14px; font-weight: 500; padding: 8px 16px; border-radius: 4px; border: 1px solid #d1d5db; margin-bottom: 8px; cursor: pointer;"
+
+templ mapControls(meta PointMeta, activeControlKey string){
+    <div id="controls" style="overflow-y: auto; max-height: 500rem;  background-color: #f3f4f6; padding: 16px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); width: 256px;">
+        for _, m := range meta.actionModes {
+            <button 
+                if activeControlKey == m.Key {
+                    style={ fmt.Sprintf("%s background-color: #A9A9A9;", btnStyleS) }
+                } else {
+                    style={ fmt.Sprintf("%s background-color: white;", btnStyleS)}
+                }
+                data-action-mode-key={ m.Key } 
+            >
+                {m.Name}
+            </button>
+            <div class="mode-details" data-mode={ m.Key } style="display:none">@m.Details</div>
+        }
+    </div>
+
+    <script>
+        document.querySelectorAll('button[data-action-mode-key]').forEach(button => {
+            button.addEventListener('click', function(e) {
+                L.DomEvent.preventDefault(e)
+                const actionMode = this.getAttribute('data-action-mode-key');
+                if (actionMode) {
+                    window.mapActor.setMode(actionMode);
+                }
+            });
+            button.addEventListener('onload', function(e){
+                const btnMode = this.getAttribute('data-action-mode-key');
+                if (btnMode == window.mapActor.mode) {
+                    e.style.background = 'blue'
+                }
+            })
+        });
+
+    </script>
+}

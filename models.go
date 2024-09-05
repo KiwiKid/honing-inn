@@ -1,6 +1,9 @@
 package main
 
 import (
+	"time"
+
+	"github.com/a-h/templ"
 	"gorm.io/gorm"
 )
 
@@ -13,13 +16,15 @@ type Factor struct {
 
 // Home represents a home with specific attributes.
 type Home struct {
-	ID        uint    `gorm:"primaryKey"` // Primary key
-	Lat       float64 `gorm:"not null"`   // Required field (non-nullable)
-	Lng       float64 `gorm:"not null"`   // Required field (non-nullable)
-	PointType string  `gorm:"default:null"`
-	Title     string  `gorm:"default:null"`
-	Url       string  `gorm:"default:null"`
-	Notes     string  `gorm:"default:null" form:"notes"` // Optional field (nullable, form tag for form binding)
+	ID              uint      `gorm:"primaryKey"`
+	Lat             float64   `gorm:"not null"`
+	Lng             float64   `gorm:"not null"`
+	PointType       string    `gorm:"default:null"`
+	Title           string    `gorm:"default:null"`
+	Url             string    `gorm:"default:null"`
+	ImageUrl        string    `gorm:"default:null"`
+	Notes           string    `gorm:"default:null" form:"notes"`
+	RemoveRequestAt time.Time `gorm:"default:null"`
 }
 
 // HomeFactorRating represents a rating for a specific factor of a home.
@@ -63,9 +68,17 @@ type MapMeta struct {
 }
 
 type PointMeta struct {
-	types   []PointTypes
-	icons   []PointIcons
-	factors []Factor
+	types       []PointTypes
+	icons       []PointIcons
+	factors     []Factor
+	actionModes []ActionMode
+}
+
+type ActionMode struct {
+	ID      uint
+	Key     string
+	Name    string
+	Details templ.Component
 }
 
 type PointTypes struct {
@@ -103,5 +116,15 @@ func GetPointMeta(db *gorm.DB) PointMeta {
 			{ID: 2, Name: "Shape"},
 		},
 		factors: allFactors,
+		actionModes: []ActionMode{
+			{ID: 5, Key: "navigate", Name: "Navigate", Details: navigateDescription()},
+			{ID: 1, Key: "point", Name: "Points", Details: addPointsDescription()},
+			{ID: 2, Key: "image", Name: "Images", Details: resizeModeWords()},
+			//{ID: 3, Key: "add-image", Name: "Add Image", Details: addImage()},
+			{ID: 4, Key: "area", Name: "Areas", Details: addAreasDescription()},
+			{ID: 6, Key: "manage", Name: "Manage", Details: manageDescription()},
+			{ID: 7, Key: "factor", Name: "Factors", Details: factorListLoad()},
+			{ID: 8, Key: "existing-points", Name: "Existing Points", Details: pointListLoad()},
+		},
 	}
 }

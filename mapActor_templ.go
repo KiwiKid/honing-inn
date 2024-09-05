@@ -36,8 +36,8 @@ func span() templ.Component {
 
 func mapActor() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_mapActor_0015`,
-		Function: `function __templ_mapActor_0015(){/**
+		Name: `__templ_mapActor_b1de`,
+		Function: `function __templ_mapActor_b1de(){/**
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Map} L 
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Marker} L.Marker
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').LatLng} L.LatLng
@@ -57,11 +57,12 @@ class mapActor {
      * @param {string} mapContainerId - The ID of the HTML element where the map will be rendered.
      * @param {'none'|'point'|'area'} [initialMode='none'] - The initial mode of interaction with the map.
      */
-    constructor(mapContainerId, initialMode = 'none') {
+    constructor(mapContainerId, initialMode = 'none', initalPointMode = 'home') {
       this.map = null;
       this.markers = [];
       this.polygons = [];
       this.mode = initialMode;
+      this.pointMode = initalPointMode;
       this.mapContainerId = mapContainerId;
       this.mapMeta = null
       this.imageOverlay = null
@@ -130,10 +131,11 @@ class mapActor {
 
     }
 
+
+
 getMap(){
   return this.map
 }
-
   /***
   * 
   * @returns {L.LatLngBounds}
@@ -167,6 +169,87 @@ getMap(){
       window.mapActor.imageOverlay.setOpacity(opacity);
     }
 
+    updateImageSize() {
+      if (window.mapActor.imageOverlay) {
+          const bounds = window.mapActor.imageOverlay.getBounds();
+          const sw = bounds.getSouthWest();
+          const ne = bounds.getNorthEast();
+          const newLat = new L.LatLng(sw.lat, sw.lng)
+          const newLng = new L.LatLng(sw.lat + (height - (ne.lat - sw.lat)), sw.lng + (width - (ne.lng - sw.lng)))
+          window.mapActor.imageOverlay.setNewImageOverlayBounds(newLat,  newLng)
+      }
+  }
+
+
+      resizeImage(scaleFactor) {
+          const bounds = window.mapActor.imageOverlay.getBounds();
+          const southWest = bounds.getSouthWest();
+          const northEast = bounds.getNorthEast();
+
+          const newSouthWest = new L.LatLng(
+              southWest.lat - (southWest.lat - northEast.lat) * (scaleFactor - 1) / 2,
+              southWest.lng - (southWest.lng - northEast.lng) * (scaleFactor - 1) / 2
+          )
+
+          const newNorthEast = new L.LatLng(
+              northEast.lat + (southWest.lat - northEast.lat) * (scaleFactor - 1) / 2,
+              northEast.lng + (southWest.lng - northEast.lng) * (scaleFactor - 1) / 2
+          );
+          window.mapActor.setNewImageOverlayBounds(newSouthWest, newNorthEast);
+      }
+
+         adjustHeight(scaleFactor) {
+          const bounds = window.mapActor.imageOverlay.getBounds();
+          const southWest = bounds.getSouthWest();
+          const northEast = bounds.getNorthEast();
+
+          const heightDifference = (northEast.lat - southWest.lat) * (scaleFactor - 1);
+          const newSouthWest = new L.LatLng(
+              southWest.lat - heightDifference / 2,
+              southWest.lng
+          );
+          const newNorthEast = new L.LatLng(
+              northEast.lat + heightDifference / 2,
+              northEast.lng
+          );
+          window.mapActor.setNewImageOverlayBounds(newSouthWest, newNorthEast);
+      }
+
+       adjustWidth(scaleFactor) {
+          const bounds = window.mapActor.imageOverlay.getBounds();
+          const southWest = bounds.getSouthWest();
+          const northEast = bounds.getNorthEast();
+
+          // Calculate the current width difference
+          const widthDifference = (northEast.lng - southWest.lng) * (scaleFactor - 1);
+
+          // Adjust the southwest and northeast coordinates based on the width difference
+          const newSouthWest = new L.LatLng(
+              southWest.lat,
+              southWest.lng - widthDifference / 2
+          );
+
+          const newNorthEast = new L.LatLng(
+              northEast.lat,
+              northEast.lng + widthDifference / 2
+          );
+          window.mapActor.setNewImageOverlayBounds(newSouthWest, newNorthEast);
+      }
+
+
+       moveImage(latOffset, lngOffset) {
+          const bounds = window.mapActor.imageOverlay.getBounds();
+
+          const newLat = new L.LatLng(bounds.getSouthWest().lat + latOffset, bounds.getSouthWest().lng + lngOffset)
+          const newLng = new L.LatLng(bounds.getNorthEast().lat + latOffset, bounds.getNorthEast().lng + lngOffset)
+          window.mapActor.setNewImageOverlayBounds(newLat, newLng);
+      }
+
+       adjustOpacity(opacityChange) {
+          opacity = Math.min(1.0, Math.max(0.0, opacity + opacityChange));  // Ensure opacity is between 0 and 1
+          window.mapActor.setNewImageOverlayOpacity(opacity);
+      }
+
   
     /**
      * Initializes the map using query string parameters for latitude, longitude, and zoom level.
@@ -190,36 +273,8 @@ getMap(){
 
         window.myMap = this.map;
         window.mapActor = this;
+
         const mapProcessingMeta = JSON.parse(document.getElementById(this.mapContainerId).getAttribute('data-processing-meta'))
-
-        const ProcessResults = L.Control.extend({
-            options: {
-                position: 'topright'
-            },
-
-            onAdd: function(map) {
-                // Create a div element with the 'custom-control' class
-                const controlDiv = L.DomUtil.create('div', 'custom-control');
-
-                // Add content to the control
-                controlDiv.innerHTML = ` + "`" + `<div id="images">
-                </div>
-                ` + "`" + `;
-
-
-                
-
-                return controlDiv;
-            },
-
-            onRemove: function(map) {
-                // Nothing to clean up when the control is removed
-            }
-        });
-
-
-        this.map.addControl(new ProcessResults());
-
         this.handleMapProcessing(mapProcessingMeta)
 
         return
@@ -231,6 +286,29 @@ getMap(){
         layers: this.layers,
         preferCanvas: true
       })
+
+
+       L.Control.geocoder({
+        defaultMarkGeocode: false,
+        collapsed: false,
+        position: 'topleft',
+      })
+        .on('markgeocode', function(e) {
+          window.mapActor.addPoint(e.geocode.center)
+
+          var bbox = e.geocode.bbox;  
+          var poly = L.polygon([
+            bbox.getSouthEast(),
+            bbox.getNorthEast(),
+            bbox.getNorthWest(),
+            bbox.getSouthWest()
+          ]).addTo(window.mapActor.map);
+
+
+
+          window.mapActor.map.fitBounds(poly.getBounds());
+        })
+        .addTo(window.mapActor.map);
 
 
 
@@ -260,7 +338,7 @@ getMap(){
 
       const ImageOverlayControl = L.Control.extend({
             options: {
-                position: 'topleft'
+                position: 'topright'
             },
 
             onAdd: function(map) {
@@ -269,10 +347,6 @@ getMap(){
 
               // Create the container for the custom control with Tailwind classes
               const container = L.DomUtil.create('div', 'leaflet-control-custom flex flex-col items-center p-4 bg-white rounded-lg shadow-md leaflet-control');
-              let resizeMode = true;
-              let currentBounds = window.mapActor.map.getBounds()
-              let opacity = 0.8
-
               const button = L.DomUtil.create('button')
               button.textContent = "Loading images"
               button.setAttribute('hx-get', '/image-overlay?viewMode=controls')
@@ -280,165 +354,7 @@ getMap(){
               button.setAttribute('hx-trigger', 'click, every 1s')
               container.appendChild(button)
 
-             // Function to update image size
-              function updateImageSize() {
-                  if (window.mapActor.imageOverlay) {
-                      const bounds = window.mapActor.imageOverlay.getBounds();
-                      const sw = bounds.getSouthWest();
-                      const ne = bounds.getNorthEast();
-                      const newLat = new L.LatLng(sw.lat, sw.lng)
-                      const newLng = new L.LatLng(sw.lat + (height - (ne.lat - sw.lat)), sw.lng + (width - (ne.lng - sw.lng)))
-                      window.mapActor.imageOverlay.setNewImageOverlayBounds(newLat,  newLng)
-                  }
-              }
-
-                  // Handle key press events for resize mode
-                  document.addEventListener('keydown', function(event) {
-                    debugger
-                    const activeElement = document.activeElement;
-                    const isInputFocused = activeElement.tagName === 'INPUT' || 
-                           activeElement.tagName === 'TEXTAREA' || 
-                           activeElement.isContentEditable;
-
-                    // If an input or editable element is focused, return early to avoid triggering the event
-                    if (isInputFocused) return;
-
-                    if (!resizeMode || !window.mapActor.imageOverlay) return;
-
-                      switch (event.key) {
-                          case 'v': // Increase size
-                              resizeImage(1.1);
-                              break;
-                          case 'b': // Increase size little
-                              resizeImage(1.01);
-                              break;
-                          case 'n': // Decrease size little
-                              resizeImage(0.99);
-                              break;
-                          case 'm': // Decrease size
-                              resizeImage(0.9);
-                              break;
-                          case 'w': // Move up
-                              moveImage(0.0005, 0);
-                              break;
-                          case 'W': // Move up
-                              moveImage(0.005, 0);
-                              break;
-                          case 's': // Move down
-                              moveImage(-0.0005, 0);
-                              break;
-                          case 'S': // Move down
-                              moveImage(-0.005, 0);
-                              break;
-                          case 'a': // Move left
-                              moveImage(0, -0.0005);
-                              break;
-                          case 'A': // Move left
-                              moveImage(0, -0.005);
-                              break;
-                          case 'd': // Move right
-                              moveImage(0, 0.0005);
-                              break;
-
-                          case 'D': // Move right
-                              moveImage(0, 0.005);
-                              break;
-                          case '[': // Decrease opacity
-                              adjustOpacity(-0.1);
-                              break;
-                          case ']': // Increase opacity
-                              adjustOpacity(0.1);
-                              break;
-                          case 'x': // remove
-                              map.removeLayer(window.mapActor.imageOverlay);
-                              window.mapActor.toggleResizeMode(false)
-                              break;
-                          case 'Escape': // Exit resize mode
-                              window.mapActor.toggleResizeMode(false);
-                              break;
-                          case 'h': // Increase height
-                            adjustHeight(0.99);
-                              break;
-                          case 'H': // Decrease height
-                             adjustHeight(1.01);
-                              break;
-                          case 'j': // Decrease height slightly
-                            adjustWidth(0.99);
-                              break;
-                          case 'J': // Increase height slightly
-                              adjustWidth(1.01);
-                              break;
-                      }
-                  });
-
-                  function resizeImage(scaleFactor) {
-                      const bounds = window.mapActor.imageOverlay.getBounds();
-                      const southWest = bounds.getSouthWest();
-                      const northEast = bounds.getNorthEast();
-
-                      const newSouthWest = new L.LatLng(
-                          southWest.lat - (southWest.lat - northEast.lat) * (scaleFactor - 1) / 2,
-                          southWest.lng - (southWest.lng - northEast.lng) * (scaleFactor - 1) / 2
-                      )
-
-                      const newNorthEast = new L.LatLng(
-                          northEast.lat + (southWest.lat - northEast.lat) * (scaleFactor - 1) / 2,
-                          northEast.lng + (southWest.lng - northEast.lng) * (scaleFactor - 1) / 2
-                      );
-                      window.mapActor.setNewImageOverlayBounds(newSouthWest, newNorthEast);
-                  }
-
-                  function adjustHeight(scaleFactor) {
-                      const bounds = window.mapActor.imageOverlay.getBounds();
-                      const southWest = bounds.getSouthWest();
-                      const northEast = bounds.getNorthEast();
-
-                      const heightDifference = (northEast.lat - southWest.lat) * (scaleFactor - 1);
-                      const newSouthWest = new L.LatLng(
-                          southWest.lat - heightDifference / 2,
-                          southWest.lng
-                      );
-                      const newNorthEast = new L.LatLng(
-                          northEast.lat + heightDifference / 2,
-                          northEast.lng
-                      );
-                      window.mapActor.setNewImageOverlayBounds(newSouthWest, newNorthEast);
-                  }
-
-                  function adjustWidth(scaleFactor) {
-                      const bounds = window.mapActor.imageOverlay.getBounds();
-                      const southWest = bounds.getSouthWest();
-                      const northEast = bounds.getNorthEast();
-
-                      // Calculate the current width difference
-                      const widthDifference = (northEast.lng - southWest.lng) * (scaleFactor - 1);
-
-                      // Adjust the southwest and northeast coordinates based on the width difference
-                      const newSouthWest = new L.LatLng(
-                          southWest.lat,
-                          southWest.lng - widthDifference / 2
-                      );
-
-                      const newNorthEast = new L.LatLng(
-                          northEast.lat,
-                          northEast.lng + widthDifference / 2
-                      );
-                      window.mapActor.setNewImageOverlayBounds(newSouthWest, newNorthEast);
-                  }
-
-
-                  function moveImage(latOffset, lngOffset) {
-                      const bounds = window.mapActor.imageOverlay.getBounds();
-
-                      const newLat = new L.LatLng(bounds.getSouthWest().lat + latOffset, bounds.getSouthWest().lng + lngOffset)
-                      const newLng = new L.LatLng(bounds.getNorthEast().lat + latOffset, bounds.getNorthEast().lng + lngOffset)
-                      window.mapActor.setNewImageOverlayBounds(newLat, newLng);
-                  }
-
-                  function adjustOpacity(opacityChange) {
-                      opacity = Math.min(1.0, Math.max(0.0, opacity + opacityChange));  // Ensure opacity is between 0 and 1
-                      window.mapActor.setNewImageOverlayOpacity(opacity);
-                  }
+        
 
 
 
@@ -455,16 +371,93 @@ getMap(){
 
 
         // Add the custom control to the map
-      this.map.addControl(new ImageOverlayControl({ position: 'topright' }));
+    //  this.map.addControl(new ImageOverlayControl({ position: 'bottomleft' }));
 
       this.addCustomControl();
+                  // Handle key press events for resize mode
+                  document.addEventListener('keydown', function(event) {
+                    const activeElement = document.activeElement;
+                    const isInputFocused = activeElement.tagName === 'INPUT' || 
+                           activeElement.tagName === 'TEXTAREA' || 
+                           activeElement.isContentEditable;
+
+                    // If an input or editable element is focused, return early to avoid triggering the event
+                    if (isInputFocused) return;
+
+                    if (!window.mapActor.resizeMode || !window.mapActor.imageOverlay) return;
+
+                      switch (event.key) {
+                          case 'v': // Increase size
+                          window.mapActor.resizeImage(1.1);
+                              break;
+                          case 'b': // Increase size little
+                          window.mapActor.resizeImage(1.01);
+                              break;
+                          case 'n': // Decrease size little
+                          window.mapActor.resizeImage(0.99);
+                              break;
+                          case 'm': // Decrease size
+                          window.mapActor.resizeImage(0.9);
+                              break;
+                          case 'w': // Move up
+                          window.mapActor.moveImage(0.0005, 0);
+                              break;
+                          case 'W': // Move up
+                          window.mapActor.moveImage(0.005, 0);
+                              break;
+                          case 's': // Move down
+                          window.mapActor.moveImage(-0.0005, 0);
+                              break;
+                          case 'S': // Move down
+                          window.mapActor.moveImage(-0.005, 0);
+                              break;
+                          case 'a': // Move left
+                          window.mapActor.moveImage(0, -0.0005);
+                              break;
+                          case 'A': // Move left
+                          window.mapActor.moveImage(0, -0.005);
+                              break;
+                          case 'd': // Move right
+                          window.mapActor.moveImage(0, 0.0005);
+                              break;
+
+                          case 'D': // Move right
+                          window.mapActor.moveImage(0, 0.005);
+                              break;
+                          case '[': // Decrease opacity
+                          window.mapActor.adjustOpacity(-0.1);
+                              break;
+                          case ']': // Increase opacity
+                          window.mapActor.adjustOpacity(0.1);
+                              break;
+                          case 'x': // remove
+                              map.removeLayer(window.mapActor.imageOverlay);
+                              window.mapActor.toggleResizeMode(false)
+                              break;
+                          case 'Escape': // Exit resize mode
+                              window.mapActor.toggleResizeMode(false);
+                              break;
+                          case 'h': // Increase height
+                          window.mapActor.adjustHeight(0.99);
+                              break;
+                          case 'H': // Decrease height
+                          window.mapActor.adjustHeight(1.01);
+                              break;
+                          case 'j': // Decrease height slightly
+                          window.mapActor.adjustWidth(0.99);
+                              break;
+                          case 'J': // Increase height slightly
+                          window.mapActor.adjustWidth(1.01);
+                              break;
+                      }
+                  });
    //  this.processShapesAndHomes();
   }
 
 
   toggleResizeMode(enable) {
-    resizeMode = enable;
-    resizeModeIndicator.style.display = resizeMode ? 'block' : 'none';
+    window.mapActor.resizeMode = enable;
+    resizeModeIndicator.style.display = window.mapActor.resizeMode ? 'block' : 'none';
   }
 
   setLayers(newLayers) { 
@@ -473,6 +466,21 @@ getMap(){
     }
     var layerControl = L.control.layers(window.baseMaps, { ...overlayMaps, ...newLayers}, { collapsed: false}).addTo(this.map);
     window.layerControl = layerControl
+  }
+
+  addPoint(latlng){
+    const popup = ` + "`" + `<div hx-get="/homes?lat=${latlng.lat}&lng=${latlng.lng}" hx-trigger="revealed">loading point..</div>` + "`" + `
+
+    const marker = window.leaflet.circleMarker([latlng.lat, latlng.lng], { color: 'green', radius: 10})
+
+     marker.addTo(window.mapActor.map).bindPopup(popup, this.createPopupOptions)
+     .openPopup();
+
+
+    const popups = document.querySelectorAll(".new-popup")
+    popups.forEach((p) => {
+        htmx.process(p)
+    })
   }
 
   addImageOverLay(overlay, name){
@@ -567,34 +575,19 @@ getMap(){
 handleMapClick(event, map){
     const { latlng } = event;
     
-    if(event.target.name === "mode"){
-        console.log('non-map click')
-        console.log(event)
-        return    
-    }else {
-        console.log('map click')
-        console.log(event.target.name)
-        console.log(event)
+    const isControlClick = event.originalEvent.target.localName !== "canvas"
+    if(isControlClick){
+        return
     }
-
     
-    let mode = document.getElementById('mode')
+    let mode = window.mapActor.mode
 
-    switch(mode.value){
+    switch(mode){
         case 'point':{
 
-            const popup = ` + "`" + `<div hx-get="/homes?lat=${latlng.lat}&lng=${latlng.lng}" hx-trigger="revealed">loading point..</div>` + "`" + `
+            window.mapActor.addPoint(latlng)
 
-            const marker = window.leaflet.circleMarker([latlng.lat, latlng.lng], { color: 'green', radius: 10})
- 
-             marker.addTo(map).bindPopup(popup, this.createPopupOptions)
-             .openPopup();;
-
-
-            const popups = document.querySelectorAll(".new-popup")
-            popups.forEach((p) => {
-                htmx.process(p)
-            })
+           
             break;
         }
         case 'area':{
@@ -625,36 +618,36 @@ handleMapClick(event, map){
             }
             break;
         }
+        case 'none':
         case '---': {
-            highlightElement(document.getElementById('mode'))
+            window.mapActor.highlightControls()
             break;
         }
         default: {
-            console.error(` + "`" + `mode  "${mode.value}" not found` + "`" + `)
+            console.error(` + "`" + `mode  "${mode}" not found` + "`" + `)
         }
     }
 }
 
 handleMapMoveEnd(e){
-  const mode = document.getElementById('mode')
   const center = e.target.getCenter()
   debouncedUpdateUrlQuery({
     zoom: e.target._zoom,
     lat: center.lat,
     lng: center.lng,
-    mode: mode.value
+    mode: window.mapActor.mode
 });
 }
 
  handleMapZoomEnd(e){
-  const mode = document.getElementById('mode')
+  const mode = window.mapActor.mode
   const center = e.target.getCenter()
 
   debouncedUpdateUrlQuery({
       zoom: e.target._zoom,
       lat: center.lat,
       lng: center.lng,
-      mode: mode.value
+      mode: mode
   });
 }
 
@@ -668,35 +661,28 @@ handleMapMoveEnd(e){
   addCustomControl() {
     const CustomControl = L.Control.extend({
       options: {
-        position: 'topright'
+        position: 'topleft'
       },
 
       onAdd: (map) => {
         // Create a div element with the 'custom-control' class
         const controlDiv = L.DomUtil.create('div', 'custom-control');
 
-        // Add content to the control
-        controlDiv.innerHTML = ` + "`" + `
-          <div class="mb-10 " onclick="(e) => e.stopPropagation()">
-            <select id="mode" class="modeset" name="mode" onclick="(e) => e.stopPropagation()">
-              <option value="---">---</option>
-              <option value="point">Create Points</option>
-              <option value="area">Create Areas</option>
-            </select>
-          </div>
-        ` + "`" + `;
+        controlDiv.innerHTML = ` + "`" + `<div hx-get="/controls" hx-trigger="every 1s" hx-swap="outerHTML">HMMMMMM loading..</div>` + "`" + `
 
         // Set the select value based on the current query parameter
         const modeSetting = new URLSearchParams(window.location.search).get('mode') || '---';
-        const select = controlDiv.querySelector('#mode');
-        select.value = modeSetting;
+      //  const select = controlDiv.querySelector('#mode');
+//        select.value = modeSetting;
 
         // Add event listener for changes in mode
-        select.addEventListener('change', (event) => {
+      /*  select.addEventListener('change', (event) => {
           const selectedMode = event.target.value;
           this.setMode(selectedMode === '---' ? 'none' : selectedMode);
           this.addQueryParam('mode', selectedMode);
-        });
+        });*/
+        htmx.process(controlDiv)
+
 
         return controlDiv;
       },
@@ -716,8 +702,45 @@ handleMapMoveEnd(e){
      * @throws {Error} If the mode is invalid.
      */
     setMode(newMode) {
-      if (['none', 'point', 'area'].includes(newMode)) {
-        this.mode = newMode;
+      if (['none', 'point', 'area', 'image', 'add-image', 'navigate', 'manage', 'export', 'import', 'factor'].includes(newMode)) {
+        if(newMode === 'image' && window.mapActor.mode !== 'image'){
+          const firstImgBtn = document.querySelectorAll('button[data-img-id]')[0]
+          if(firstImgBtn){
+            firstImgBtn.click()
+          }
+          window.mapActor.toggleResizeMode(true)
+        }else {
+          window.mapActor.toggleResizeMode(false)
+        }
+
+
+        
+        // hide all mode-details elements
+        const modeDetails = document.querySelectorAll('.mode-details')
+        modeDetails.forEach((el) => {
+          el.style.display = 'none'
+        })
+
+        const buttons = document.querySelectorAll('button[data-action-mode-key]')
+        buttons.forEach((el) => {
+          el.style.backgroundColor = 'white'
+        })
+
+
+        if (newMode == window.mapActor.mode) {
+          window.mapActor.mode = 'none';
+          return;
+        }
+        const modeDetailsElement = document.querySelector(` + "`" + `.mode-details[data-mode="${newMode}"]` + "`" + `)
+        modeDetailsElement.style.display = 'block'
+
+        const modeBtn = document.querySelector(` + "`" + `button[data-action-mode-key="${newMode}"]` + "`" + `)
+        modeBtn.style.backgroundColor = '#A9A9A9'
+        window.mapActor.mode = newMode;
+
+        // get first mode-details element after firstImgBtn
+        
+
       } else {
         throw new Error(` + "`" + `Invalid mode: ${newMode}` + "`" + `);
       }
@@ -832,12 +855,16 @@ handleMapMoveEnd(e){
         case "good":
           areaOptions.color = '#169016'
           break;
+        case "no-go":
         case "noGo":
           areaOptions.color = 'black'
           break
         case "warning":
           areaOptions.color = 'red'
           break;
+        case "warning":
+            areaOptions.color = 'red'
+            break;
         
         default:
           console.error(` + "`" + `shapeKind ${areaOptions.shapeKind} not found` + "`" + `)
@@ -881,6 +908,11 @@ handleMapMoveEnd(e){
         const url = new URL(window.location);
         url.searchParams.set(key, value);
         window.history.replaceState({}, '', url);
+    }
+
+    highlightControls(){
+      const controls = document.querySelector('#controls')
+      highlightElement(controls)
     }
 
 
@@ -1103,6 +1135,8 @@ handleMapMoveEnd(e){
     }
 
     const debouncedUpdateUrlQuery = debounce(updateUrlQuery, 300);
+
+    
     
     function highlightElement(element) {
         // Apply the highlight styles
@@ -1121,15 +1155,10 @@ handleMapMoveEnd(e){
     }
       const info = document.querySelector("#info");
 
-      const setMode = function(mode){
-            console.log(` + "`" + `setMode ${mode}` + "`" + `)
-            mode.value = mode
-      }
-    
-
+  
       
 }`,
-		Call:       templ.SafeScript(`__templ_mapActor_0015`),
-		CallInline: templ.SafeScriptInline(`__templ_mapActor_0015`),
+		Call:       templ.SafeScript(`__templ_mapActor_b1de`),
+		CallInline: templ.SafeScriptInline(`__templ_mapActor_b1de`),
 	}
 }
