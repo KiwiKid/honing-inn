@@ -28,5 +28,5 @@ primary_region = 'syd'
   cpus = 1
 
 [mounts]
-  source = "sqlite_volume_3"
+  source = "sqlite_volume_4"
   destination = "/mnt/volume"
