@@ -8,7 +8,7 @@ primary_region = 'syd'
 
 [build]
 
-[env]
+[build.args]
   PORT = '8080'
   DATABASE_URL = "/mnt/volume/data.db"
   PREVIEW_ENV = "true"
@@ -28,5 +28,5 @@ primary_region = 'syd'
   cpus = 1
 
 [mounts]
-  source = "sqlite_volume_4"
+  source = "sqlite3_volume"
   destination = "/mnt/volume"
