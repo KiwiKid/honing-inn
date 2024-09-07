@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  app:
+    image: nzkiwikid/honning-inn:latest
+    environment:
+      - PORT=8080
+      - DATABASE_URL=/mnt/volume/data.db
+      - PREVIEW_ENV=true
+      - IMAGE_DIR=/mnt/volume/images
+    ports:
+      - "8080:8080"
+    volumes:
+      - sqlite_volume:/mnt/volume
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+volumes:
+  sqlite_volume:
