@@ -1002,6 +1002,7 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 				pointList := pointListTable(homes, "")
 				pointList.Render(GetContext(r), w)
 				return
+			case "view":
 			default:
 				lat := r.URL.Query().Get("lat")
 				lng := r.URL.Query().Get("lng")
@@ -1087,6 +1088,17 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 				}
 			}
 
+			idStr := r.FormValue("ID")
+			if len(idStr) == 0 {
+				id, err := strconv.Atoi(idStr)
+				if err != nil {
+					http.Error(w, "Invalid home ID", http.StatusBadRequest)
+					return
+				} else {
+					home.ID = uint(id)
+				}
+			}
+
 			var msg string
 			result := db.Save(&home)
 			if result.Error != nil {
@@ -1103,7 +1115,6 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 
 			switch viewMode {
 			case "view":
-				idStr := r.URL.Query().Get("id")
 				if len(idStr) == 0 {
 					homes := GetHomes(db)
 					pointList := pointListTable(homes, "")
@@ -1111,12 +1122,8 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 					pointList.Render(GetContext(r), w)
 					return
 				}
-				id, err := strconv.Atoi(idStr)
-				if err != nil {
-					http.Error(w, "Invalid home ID", http.StatusBadRequest)
-					return
-				}
-				ratings := GetHomeRatings(db, uint(id))
+
+				ratings := GetHomeRatings(db, uint(home.ID))
 
 				log.Printf("===============home - view")
 				homeForm := homeView(home, msg, pointMeta, ratings)

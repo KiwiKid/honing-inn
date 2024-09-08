@@ -36,15 +36,13 @@ func span() templ.Component {
 
 func mapActor() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_mapActor_c63f`,
-		Function: `function __templ_mapActor_c63f(){/**
+		Name: `__templ_mapActor_a664`,
+		Function: `function __templ_mapActor_a664(){/**
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Map} L 
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Marker} L.Marker
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').LatLng} L.LatLng
  */
 
-
-console.log('mapActor')
 if(window.mapActor){
   console.log('map actor ran - already init');
    return;
@@ -94,10 +92,6 @@ class mapActor {
         adjustOpacity: (amount) => window.mapActor.adjustOpacity(amount),
         adjustHeight: (factor) => window.mapActor.adjustHeight(factor),
         adjustWidth: (factor) => window.mapActor.adjustWidth(factor),
-        removeImage: () => {
-          map.removeLayer(window.mapActor.imageOverlay);
-          window.mapActor.toggleResizeMode(false);
-        },
         exitResizeMode: () => window.mapActor.toggleResizeMode(false)
       };
 
@@ -169,7 +163,6 @@ getMap(){
         northEast
       );
       window.mapActor.imageOverlay.setBounds(bounds);
-      console.log(` + "`" + `setNewImageOverlayBounds ${JSON.stringify(bounds)}` + "`" + `)
       window.mapActor.imageOverlay.setZIndex(1000)
       const imgBounds = document.getElementById('imgBounds');
       imgBounds.value = JSON.stringify(bounds)
@@ -195,6 +188,7 @@ getMap(){
 
 
       resizeImage(scaleFactor) {
+          if(!window.mapActor.confirmImageSelected())return;
           const bounds = window.mapActor.imageOverlay.getBounds();
           const southWest = bounds.getSouthWest();
           const northEast = bounds.getNorthEast();
@@ -212,6 +206,7 @@ getMap(){
       }
 
          adjustHeight(scaleFactor) {
+          if(!window.mapActor.confirmImageSelected())return;
           const bounds = window.mapActor.imageOverlay.getBounds();
           const southWest = bounds.getSouthWest();
           const northEast = bounds.getNorthEast();
@@ -229,6 +224,7 @@ getMap(){
       }
 
        adjustWidth(scaleFactor) {
+        if(!window.mapActor.confirmImageSelected())return;
           const bounds = window.mapActor.imageOverlay.getBounds();
           const southWest = bounds.getSouthWest();
           const northEast = bounds.getNorthEast();
@@ -251,6 +247,7 @@ getMap(){
 
 
        moveImage(latOffset, lngOffset) {
+          if(!window.mapActor.confirmImageSelected())return;
           const bounds = window.mapActor.imageOverlay.getBounds();
 
           const newLat = new L.LatLng(bounds.getSouthWest().lat + latOffset, bounds.getSouthWest().lng + lngOffset)
@@ -259,7 +256,9 @@ getMap(){
       }
 
        adjustOpacity(opacityChange) {
-          opacity = Math.min(1.0, Math.max(0.0, opacity + opacityChange));  // Ensure opacity is between 0 and 1
+          if(!window.mapActor.confirmImageSelected())return;
+          const currentOpacity = Number(window.mapActor.imageOverlay._image.style.opacity) ? Number(window.mapActor.imageOverlay._image.style.opacity) : 1.0;
+          const opacity = Math.min(1.0, Math.max(0.0, currentOpacity + opacityChange));  // Ensure opacity is between 0 and 1
           window.mapActor.setNewImageOverlayOpacity(opacity);
       }
 
@@ -478,8 +477,11 @@ getMap(){
       const boundsObj = JSON.parse(bounds)
       const sw = new L.LatLng(boundsObj._southWest.lat, boundsObj._southWest.lng)
       const ne = new L.LatLng(boundsObj._northEast.lat, boundsObj._northEast.lng)
-        window.mapActor.setNewImageOverlayBounds(sw, ne);
+      window.mapActor.setNewImageOverlayBounds(sw, ne);
 
+
+      const centerOfImage = new L.LatLng((sw.lat + ne.lat) / 2, (sw.lng + ne.lng) / 2);
+      window.mapActor.panMap(centerOfImage);
       }
 
       const imgName = document.getElementById('imgName');
@@ -631,7 +633,7 @@ handleMapMoveEnd(e){
         // Create a div element with the 'custom-control' class
         const controlDiv = L.DomUtil.create('div', 'custom-control');
 
-        controlDiv.innerHTML = ` + "`" + `<div hx-get="/controls" hx-trigger="every 1s" hx-swap="outerHTML">HMMMMMM loading..</div>` + "`" + `
+        controlDiv.innerHTML = ` + "`" + `<div hx-get="/controls" hx-trigger="every 1s" hx-swap="outerHTML">loading..</div>` + "`" + `
 
         // Set the select value based on the current query parameter
         const modeSetting = new URLSearchParams(window.location.search).get('mode') || '---';
@@ -873,6 +875,27 @@ handleMapMoveEnd(e){
         window.history.replaceState({}, '', url);
     }
 
+    confirmImageSelected(){
+      if(!window.mapActor.imageOverlay){
+        const controls = document.querySelector("select[name='imageId']")
+        highlightElement(controls)
+        
+
+        alert('Please select an image overlay first')
+        return false
+      }
+
+      const imageSubmit = document.querySelector("#img-submit")
+      if(!imageSubmit){
+        console.error('imageSubmit not found')
+        return false
+      }else{
+        imageSubmit.style.backgroundColor = 'green'
+      }
+      
+      return true
+    }
+
     highlightControls(){
       const controls = document.querySelector('#controls')
       highlightElement(controls)
@@ -1065,7 +1088,6 @@ handleMapMoveEnd(e){
       
   }
 
-  console.log('INIT MAP')
   const mapController = new mapActor('map');
   mapController.initMap();
 
@@ -1121,7 +1143,7 @@ handleMapMoveEnd(e){
   
       
 }`,
-		Call:       templ.SafeScript(`__templ_mapActor_c63f`),
-		CallInline: templ.SafeScriptInline(`__templ_mapActor_c63f`),
+		Call:       templ.SafeScript(`__templ_mapActor_a664`),
+		CallInline: templ.SafeScriptInline(`__templ_mapActor_a664`),
 	}
 }

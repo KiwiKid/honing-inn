@@ -20,10 +20,10 @@ templ resizeModeWords() {
             case 'resize-b': window.mapActor.actions.resizeImage(1.01); break;
             case 'resize-n': window.mapActor.actions.resizeImage(0.99); break;
             case 'resize-m': window.mapActor.actions.resizeImage(0.9); break;
-            case 'move-w': window.mapActor.actions.moveImage(0.0005, 0); break;
-            case 'move-s': window.mapActor.actions.moveImage(-0.0005, 0); break;
-            case 'move-a': window.mapActor.actions.moveImage(0, -0.0005); break;
-            case 'move-d': window.mapActor.actions.moveImage(0, 0.0005); break;
+            case 'move-up': window.mapActor.actions.moveImage(0.0005, 0); break;
+            case 'move-down': window.mapActor.actions.moveImage(-0.0005, 0); break;
+            case 'move-left': window.mapActor.actions.moveImage(0, -0.0005); break;
+            case 'move-right': window.mapActor.actions.moveImage(0, 0.0005); break;
             case 'opacity-down': window.mapActor.actions.adjustOpacity(-0.1); break;
             case 'opacity-up': window.mapActor.actions.adjustOpacity(0.1); break;
             case 'remove': window.mapActor.actions.removeImage(); break;
@@ -41,38 +41,33 @@ templ resizeModeWords() {
     <div hx-get="/image-overlay?viewMode=controls" hx-swap="outerHTML" hx-trigger="click, every 1s"></div>
     
     <div>
-      Resize Mode Active - double click to exit resize <br/>
-      (WASD to move)
+      Resize Mode Active <br/>
     </div>
     
     <div>
-      <button style="margin: 5px; padding: 5px 10px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;" data-img-action="move-w">Move Left (A)</button>
-      <button style="margin: 5px; padding: 5px 10px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;" data-img-action="move-s">Move Down (S)</button>
-      <button style="margin: 5px; padding: 5px 10px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;" data-img-action="move-d">Move Right (D)</button>
-      <button style="margin: 5px; padding: 5px 10px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;" data-img-action="move-w">Move Up (W)</button>
+      <button style="margin: 5px; padding: 5px 5px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;" data-img-action="move-up">Move Up (W)</button>
+      <button style="margin: 5px; padding: 5px 5px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;" data-img-action="move-down">Move Down (S)</button>
+      <button style="margin: 5px; padding: 5px 5px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;" data-img-action="move-left">Move Left (A)</button>
+      <button style="margin: 5px; padding: 5px 5px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;" data-img-action="move-right">Move Right (D)</button>
     </div>
 
     <div>
-      <button style="margin: 5px; padding: 5px 10px; background-color: #F5A623; color: white; border: none; border-radius: 4px;" data-img-action="resize-v">Resize (v)</button>
-      <button style="margin: 5px; padding: 5px 10px; background-color: #F5A623; color: white; border: none; border-radius: 4px;" data-img-action="resize-b">Resize (b)</button>
-      <button style="margin: 5px; padding: 5px 10px; background-color: #F5A623; color: white; border: none; border-radius: 4px;" data-img-action="resize-n">Resize (n)</button>
-      <button style="margin: 5px; padding: 5px 10px; background-color: #F5A623; color: white; border: none; border-radius: 4px;" data-img-action="resize-m">Resize (m)</button>
+          <button style="margin: 5px; padding: 5px 5px; background-color: #F5A623; color: white; border: none; border-radius: 2px;" data-img-action="resize-m">Larger (++) (m)</button>
+      <button style="margin: 5px; padding: 5px 5px; background-color: #F5A623; color: white; border: none; border-radius: 2px;" data-img-action="resize-n">Larger (+) (n)</button>
+      <button style="margin: 5px; padding: 5px 5px; background-color: #F5A623; color: white; border: none; border-radius: 2px;" data-img-action="resize-v">Smaller (--) (v)</button>
+      <button style="margin: 5px; padding: 5px 5px; background-color: #F5A623; color: white; border: none; border-radius: 2px;" data-img-action="resize-b">Smaller (-) (b)</button>
     </div>
 
     <div>
-      <button style="margin: 5px; padding: 5px 10px; background-color: #50E3C2; color: white; border: none; border-radius: 4px;" data-img-action="opacity-down">Opacity Down ([)</button>
-      <button style="margin: 5px; padding: 5px 10px; background-color: #50E3C2; color: white; border: none; border-radius: 4px;" data-img-action="opacity-up">Opacity Up (])</button>
+      <button style="margin: 5px; padding: 5px 5px; background-color: #50E3C2; color: white; border: none; border-radius: 4px;" data-img-action="opacity-down">Opacity Down ([)</button>
+      <button style="margin: 5px; padding: 5px 5px; background-color: #50E3C2; color: white; border: none; border-radius: 4px;" data-img-action="opacity-up">Opacity Up (])</button>
     </div>
 
     <div>
       <button style="margin: 5px; padding: 5px 10px; background-color: #B8E986; color: white; border: none; border-radius: 4px;" data-img-action="shorter">Shorter (h)</button>
+            <button style="margin: 5px; padding: 5px 10px; background-color: #B8E986; color: white; border: none; border-radius: 4px;" data-img-action="taller">Taller (H)</button>
       <button style="margin: 5px; padding: 5px 10px; background-color: #B8E986; color: white; border: none; border-radius: 4px;" data-img-action="less-wide">Less Wide (j)</button>
-      <button style="margin: 5px; padding: 5px 10px; background-color: #B8E986; color: white; border: none; border-radius: 4px;" data-img-action="taller">Taller (H)</button>
       <button style="margin: 5px; padding: 5px 10px; background-color: #B8E986; color: white; border: none; border-radius: 4px;" data-img-action="wider">Wider (J)</button>
-    </div>
-
-    <div>
-      <button style="margin: 5px; padding: 5px 10px; background-color: #D0021B; color: white; border: none; border-radius: 4px;" data-img-action="remove">Remove Image (x)</button>
     </div>
   </div>
 }
@@ -114,7 +109,7 @@ templ addImage(){
       </div>
 
     <button type="submit" class="px-6 py-2 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600">
-      Submit
+      Add Image
     </button>
   </form>
 }
@@ -178,10 +173,10 @@ templ imageOverlayEdit(image ImageOverlay, msg string){
 
 
 
-  <button type="submit" class="px-6 py-2 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600">
-    Submit
+  <button id="img-submit" type="submit" class="px-6 py-2 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600">
+    Save Edits
   </button>
-  <button hx-delete={ fmt.Sprintf("/image-overlay/%d", image.ID) } hx-confirm={ fmt.Sprintf("Are you sure you want to delete overlay image %s?", image.Name) }>Delete</button>
+  <button hx-delete={ fmt.Sprintf("/image-overlay/%d", image.ID) } hx-confirm={ fmt.Sprintf("Are you sure you want to delete overlay image %s?", image.Name) } style="background-color: red">Delete Image</button>
   </form>
 
   @uploadImageOverlayKeyForm(image)
