@@ -238,21 +238,6 @@ getMap(){
         window.mapActor = this;
 
 
-      //if(this.mapMeta.ProcessMode){
-      //  const mapProcessingMeta = JSON.parse(document.getElementById(this.mapContainerId).getAttribute('data-processing-meta'))
-      //  this.handleMapProcessing(mapProcessingMeta)
-//
-      //  return
-      //}
-      
-    /*  this.map = L.map(this.mapContainerId, {
-        center: [this.mapMeta.Lat, this.mapMeta.Lng],
-        zoom: this.mapMeta.Zoom,
-        layers: this.layers,
-        preferCanvas: true
-      })*/
-
-
        L.Control.geocoder({
         defaultMarkGeocode: false,
         collapsed: false,
@@ -268,8 +253,6 @@ getMap(){
           bbox.getNorthWest(),
           bbox.getSouthWest()
         ]).addTo(window.mapActor.map);
-
-
           
           window.mapActor.map.fitBounds(poly.getBounds());
         })
