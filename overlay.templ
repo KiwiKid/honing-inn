@@ -8,27 +8,75 @@ templ imageOverlayPopup(){
    
 }
 
-templ resizeModeWords(){
-  <div id="resizeModeIndicator" style="line-height:12px;" class="resize-mode text-sm text-gray-500 bg-yellow-100 p-2 rounded-md" >
+templ resizeModeWords() {
+  <script>
+  document.querySelectorAll('[data-img-action]').forEach(button => {
+        button.addEventListener('click', function(evt) {
+          evt.preventDefault()
+          const action = this.getAttribute('data-img-action');
+      
+          switch (action) {
+            case 'resize-v': window.mapActor.actions.resizeImage(1.1); break;
+            case 'resize-b': window.mapActor.actions.resizeImage(1.01); break;
+            case 'resize-n': window.mapActor.actions.resizeImage(0.99); break;
+            case 'resize-m': window.mapActor.actions.resizeImage(0.9); break;
+            case 'move-w': window.mapActor.actions.moveImage(0.0005, 0); break;
+            case 'move-s': window.mapActor.actions.moveImage(-0.0005, 0); break;
+            case 'move-a': window.mapActor.actions.moveImage(0, -0.0005); break;
+            case 'move-d': window.mapActor.actions.moveImage(0, 0.0005); break;
+            case 'opacity-down': window.mapActor.actions.adjustOpacity(-0.1); break;
+            case 'opacity-up': window.mapActor.actions.adjustOpacity(0.1); break;
+            case 'remove': window.mapActor.actions.removeImage(); break;
+            case 'exit-resize': window.mapActor.actions.exitResizeMode(); break;
+            case 'shorter': window.mapActor.actions.adjustHeight(0.99); break;
+            case 'taller': window.mapActor.actions.adjustHeight(1.01); break;
+            case 'less-wide': window.mapActor.actions.adjustWidth(0.99); break;
+            case 'wider': window.mapActor.actions.adjustWidth(1.01); break;
+          }
+        });
+      })
+      window.mapActor.map.doubleClickZoom.disable();
+  </script>
+  <div id="resizeModeIndicator" style="line-height:12px;" class="resize-mode text-sm text-gray-500 bg-yellow-100 p-2 rounded-md">
     <div hx-get="/image-overlay?viewMode=controls" hx-swap="outerHTML" hx-trigger="click, every 1s"></div>
-      <div>
+    
+    <div>
       Resize Mode Active - double click to exit resize <br/>
       (WASD to move)
     </div>
+    
     <div>
-     (v, b, n, m to resize)
-     </div>
-     <div>
-      - ([, ] to change opacity)
-     </div>
-     <div>
-       (h - make shorter, j - make less-wide, H - make taller, J - make wider)
-       </div>
-       <div>
-       (x to remove image)
-       </div>
+      <button style="margin: 5px; padding: 5px 10px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;" data-img-action="move-w">Move Left (A)</button>
+      <button style="margin: 5px; padding: 5px 10px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;" data-img-action="move-s">Move Down (S)</button>
+      <button style="margin: 5px; padding: 5px 10px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;" data-img-action="move-d">Move Right (D)</button>
+      <button style="margin: 5px; padding: 5px 10px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;" data-img-action="move-w">Move Up (W)</button>
     </div>
+
+    <div>
+      <button style="margin: 5px; padding: 5px 10px; background-color: #F5A623; color: white; border: none; border-radius: 4px;" data-img-action="resize-v">Resize (v)</button>
+      <button style="margin: 5px; padding: 5px 10px; background-color: #F5A623; color: white; border: none; border-radius: 4px;" data-img-action="resize-b">Resize (b)</button>
+      <button style="margin: 5px; padding: 5px 10px; background-color: #F5A623; color: white; border: none; border-radius: 4px;" data-img-action="resize-n">Resize (n)</button>
+      <button style="margin: 5px; padding: 5px 10px; background-color: #F5A623; color: white; border: none; border-radius: 4px;" data-img-action="resize-m">Resize (m)</button>
+    </div>
+
+    <div>
+      <button style="margin: 5px; padding: 5px 10px; background-color: #50E3C2; color: white; border: none; border-radius: 4px;" data-img-action="opacity-down">Opacity Down ([)</button>
+      <button style="margin: 5px; padding: 5px 10px; background-color: #50E3C2; color: white; border: none; border-radius: 4px;" data-img-action="opacity-up">Opacity Up (])</button>
+    </div>
+
+    <div>
+      <button style="margin: 5px; padding: 5px 10px; background-color: #B8E986; color: white; border: none; border-radius: 4px;" data-img-action="shorter">Shorter (h)</button>
+      <button style="margin: 5px; padding: 5px 10px; background-color: #B8E986; color: white; border: none; border-radius: 4px;" data-img-action="less-wide">Less Wide (j)</button>
+      <button style="margin: 5px; padding: 5px 10px; background-color: #B8E986; color: white; border: none; border-radius: 4px;" data-img-action="taller">Taller (H)</button>
+      <button style="margin: 5px; padding: 5px 10px; background-color: #B8E986; color: white; border: none; border-radius: 4px;" data-img-action="wider">Wider (J)</button>
+    </div>
+
+    <div>
+      <button style="margin: 5px; padding: 5px 10px; background-color: #D0021B; color: white; border: none; border-radius: 4px;" data-img-action="remove">Remove Image (x)</button>
+    </div>
+  </div>
 }
+
 
 templ imageOverlayScript(){
       <script>

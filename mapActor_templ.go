@@ -36,8 +36,8 @@ func span() templ.Component {
 
 func mapActor() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_mapActor_ef5c`,
-		Function: `function __templ_mapActor_ef5c(){/**
+		Name: `__templ_mapActor_c63f`,
+		Function: `function __templ_mapActor_c63f(){/**
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Map} L 
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Marker} L.Marker
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').LatLng} L.LatLng
@@ -87,6 +87,19 @@ class mapActor {
         color: 'blue',
         minWidth: '300'
       }
+
+      this.actions = {
+        resizeImage: (factor) => window.mapActor.resizeImage(factor),
+        moveImage: (x, y) => window.mapActor.moveImage(x, y),
+        adjustOpacity: (amount) => window.mapActor.adjustOpacity(amount),
+        adjustHeight: (factor) => window.mapActor.adjustHeight(factor),
+        adjustWidth: (factor) => window.mapActor.adjustWidth(factor),
+        removeImage: () => {
+          map.removeLayer(window.mapActor.imageOverlay);
+          window.mapActor.toggleResizeMode(false);
+        },
+        exitResizeMode: () => window.mapActor.toggleResizeMode(false)
+      };
 
 
       window.shapeLayers = {};
@@ -270,21 +283,6 @@ getMap(){
         window.mapActor = this;
 
 
-      //if(this.mapMeta.ProcessMode){
-      //  const mapProcessingMeta = JSON.parse(document.getElementById(this.mapContainerId).getAttribute('data-processing-meta'))
-      //  this.handleMapProcessing(mapProcessingMeta)
-//
-      //  return
-      //}
-      
-    /*  this.map = L.map(this.mapContainerId, {
-        center: [this.mapMeta.Lat, this.mapMeta.Lng],
-        zoom: this.mapMeta.Zoom,
-        layers: this.layers,
-        preferCanvas: true
-      })*/
-
-
        L.Control.geocoder({
         defaultMarkGeocode: false,
         collapsed: false,
@@ -300,8 +298,6 @@ getMap(){
           bbox.getNorthWest(),
           bbox.getSouthWest()
         ]).addTo(window.mapActor.map);
-
-
           
           window.mapActor.map.fitBounds(poly.getBounds());
         })
@@ -358,83 +354,47 @@ getMap(){
     //  this.map.addControl(new ImageOverlayControl({ position: 'bottomleft' }));
 
       this.addCustomControl();
-                  // Handle key press events for resize mode
-                  document.addEventListener('keydown', function(event) {
-                    const activeElement = document.activeElement;
-                    const isInputFocused = activeElement.tagName === 'INPUT' || 
-                           activeElement.tagName === 'TEXTAREA' || 
-                           activeElement.isContentEditable;
-
-                    // If an input or editable element is focused, return early to avoid triggering the event
-                    if (isInputFocused) return;
-
-                    if (!window.mapActor.resizeMode || !window.mapActor.imageOverlay) return;
-
-                      switch (event.key) {
-                          case 'v': // Increase size
-                          window.mapActor.resizeImage(1.1);
-                              break;
-                          case 'b': // Increase size little
-                          window.mapActor.resizeImage(1.01);
-                              break;
-                          case 'n': // Decrease size little
-                          window.mapActor.resizeImage(0.99);
-                              break;
-                          case 'm': // Decrease size
-                          window.mapActor.resizeImage(0.9);
-                              break;
-                          case 'w': // Move up
-                          window.mapActor.moveImage(0.0005, 0);
-                              break;
-                          case 'W': // Move up
-                          window.mapActor.moveImage(0.005, 0);
-                              break;
-                          case 's': // Move down
-                          window.mapActor.moveImage(-0.0005, 0);
-                              break;
-                          case 'S': // Move down
-                          window.mapActor.moveImage(-0.005, 0);
-                              break;
-                          case 'a': // Move left
-                          window.mapActor.moveImage(0, -0.0005);
-                              break;
-                          case 'A': // Move left
-                          window.mapActor.moveImage(0, -0.005);
-                              break;
-                          case 'd': // Move right
-                          window.mapActor.moveImage(0, 0.0005);
-                              break;
-
-                          case 'D': // Move right
-                          window.mapActor.moveImage(0, 0.005);
-                              break;
-                          case '[': // Decrease opacity
-                          window.mapActor.adjustOpacity(-0.1);
-                              break;
-                          case ']': // Increase opacity
-                          window.mapActor.adjustOpacity(0.1);
-                              break;
-                          case 'x': // remove
-                              map.removeLayer(window.mapActor.imageOverlay);
-                              window.mapActor.toggleResizeMode(false)
-                              break;
-                          case 'Escape': // Exit resize mode
-                              window.mapActor.toggleResizeMode(false);
-                              break;
-                          case 'h': // Increase height
-                          window.mapActor.adjustHeight(0.99);
-                              break;
-                          case 'H': // Decrease height
-                          window.mapActor.adjustHeight(1.01);
-                              break;
-                          case 'j': // Decrease height slightly
-                          window.mapActor.adjustWidth(0.99);
-                              break;
-                          case 'J': // Increase height slightly
-                          window.mapActor.adjustWidth(1.01);
-                              break;
-                      }
-                  });
+      // Handle key press events for resize mode
+     
+                  
+                  // Handle keypress events
+      document.addEventListener('keydown', function(event) {
+        const activeElement = document.activeElement;
+        const isInputFocused = activeElement.tagName === 'INPUT' || 
+                                activeElement.tagName === 'TEXTAREA' || 
+                                activeElement.isContentEditable;
+      
+        // If an input or editable element is focused, return early to avoid triggering the event
+        if (isInputFocused) return;
+      
+        if (!window.mapActor.resizeMode || !window.mapActor.imageOverlay) return;
+      
+        switch (event.key) {
+          case 'v': window.mapActor.actions.resizeImage(1.1); break;
+          case 'b': window.mapActor.actions.resizeImage(1.01); break;
+          case 'n': window.mapActor.actions.resizeImage(0.99); break;
+          case 'm': window.mapActor.actions.resizeImage(0.9); break;
+          case 'w': window.mapActor.actions.moveImage(0.0005, 0); break;
+          case 'W': window.mapActor.actions.moveImage(0.005, 0); break;
+          case 's': window.mapActor.actions.moveImage(-0.0005, 0); break;
+          case 'S': window.mapActor.actions.moveImage(-0.005, 0); break;
+          case 'a': window.mapActor.actions.moveImage(0, -0.0005); break;
+          case 'A': window.mapActor.actions.moveImage(0, -0.005); break;
+          case 'd': window.mapActor.actions.moveImage(0, 0.0005); break;
+          case 'D': window.mapActor.actions.moveImage(0, 0.005); break;
+          case '[': window.mapActor.actions.adjustOpacity(-0.1); break;
+          case ']': window.mapActor.actions.adjustOpacity(0.1); break;
+          case 'x': window.mapActor.actions.removeImage(); break;
+          case 'Escape': window.mapActor.actions.exitResizeMode(); break;
+          case 'h': window.mapActor.actions.adjustHeight(0.99); break;
+          case 'H': window.mapActor.actions.adjustHeight(1.01); break;
+          case 'j': window.mapActor.actions.adjustWidth(0.99); break;
+          case 'J': window.mapActor.actions.adjustWidth(1.01); break;
+        }
+      });
+      
+      // Handle button clicks
+      
    //  this.processShapesAndHomes();
   }
 
@@ -1161,7 +1121,7 @@ handleMapMoveEnd(e){
   
       
 }`,
-		Call:       templ.SafeScript(`__templ_mapActor_ef5c`),
-		CallInline: templ.SafeScriptInline(`__templ_mapActor_ef5c`),
+		Call:       templ.SafeScript(`__templ_mapActor_c63f`),
+		CallInline: templ.SafeScriptInline(`__templ_mapActor_c63f`),
 	}
 }
