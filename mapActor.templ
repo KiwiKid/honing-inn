@@ -270,7 +270,7 @@ getMap(){
         ]).addTo(window.mapActor.map);
 
 
-
+          
           window.mapActor.map.fitBounds(poly.getBounds());
         })
         .addTo(window.mapActor.map);
@@ -412,6 +412,11 @@ getMap(){
     resizeModeIndicator.style.display = window.mapActor.resizeMode ? 'block' : 'none';
   }
 
+  panMap(latLnt){
+    window.mapActor.map.panTo(latLnt)
+    window.mapActor.map.setZoom(17)
+  }
+
   setLayers(newLayers) { 
     if (window.layerControl) {
       window.layerControl.remove();
@@ -528,7 +533,7 @@ handleMapClick(event, map){
     const { latlng } = event;
     console.log(`map click ${latlng}`)
     
-    const isControlClick = event.originalEvent.target.parentElement.id === 'controls'
+    const isControlClick = event.originalEvent.target.parentElement.classList.contains('controls')
     if(isControlClick){
         return
     }
@@ -576,6 +581,16 @@ handleMapClick(event, map){
             window.mapActor.highlightControls()
             break;
         }
+        case 'existing-points':
+          // query the all parent nodes for a 'data-home' attribute:
+          const homeData = event.originalEvent.target.closest('[data-home]').getAttribute('data-home')
+          if(homeData){
+            const homeObj = JSON.parse(homeData)
+            window.mapActor.panMap(new L.LatLng(homeObj.Lat, homeObj.Lng));
+          }else{
+            console.error('homeData not found')
+          }
+          
         case 'factor':{
           break;
         }
@@ -658,7 +673,7 @@ handleMapMoveEnd(e){
      * @throws {Error} If the mode is invalid.
      */
     setMode(newMode) {
-      if (['none', 'point', 'area', 'image', 'add-image', 'navigate', 'manage', 'export', 'import', 'factor'].includes(newMode)) {
+      if (['none', 'point', 'area', 'image', 'add-image', 'navigate', 'manage', 'export', 'import', 'factor', 'existing-points'].includes(newMode)) {
         if(newMode === 'image' && window.mapActor.mode !== 'image'){
           const firstImgBtn = document.querySelectorAll('button[data-img-id]')[0]
           if(firstImgBtn){

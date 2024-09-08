@@ -5,22 +5,61 @@ import (
     "github.com/dustin/go-humanize"
 )
 templ pointListLoad(){
-    <div hx-get="homes?viewMode=view" hx-trigger="revealed">loading points...</div>
+    <div hx-get="/homes?viewMode=list" hx-trigger="revealed">loading points...</div>
 }
-templ pointList(homes []Home, msg string){
-    <div>
-     if len(msg) > 0 {
-        <div class="text-red-500">{ msg }</div>
-    }
-    for _, h := range homes {
-        @point(h)
-    }
+
+
+templ pointListTable(homes []Home, msg string){
+    <div style="margin-top: 16px;" hx-target="this">
+        if len(msg) > 0 {
+            <div style="color: #EF4444; font-size: 14px; margin-bottom: 16px;">{ msg }</div>
+        }
+        for _, h := range homes {
+            @point(h)
+        }
     </div>
 }
 
 templ point(home Home){
-    <div>{ fmt.Sprintf("%+v", home) }</div>
+    <div data-home={ templ.JSONString(home) } style="line-height:12px; display: flex; flex-direction: column; padding: 2px; border: 1px solid #e5e7eb; border-radius: 8px; background-color: #ffffff; box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05); margin-bottom: 2px;">
+        <div style="display: flex; margin-bottom: 2px;">
+            <span style="font-weight: 600; width: 96px;">ID:</span>
+            <span>{ fmt.Sprintf("%d",home.ID) }</span>
+        </div>
+        <div style="display: flex; margin-bottom: 2px;">
+            <span style="font-weight: 600; width: 96px;">PointType:</span>
+            <span>{ home.PointType }</span>
+        </div>
+        <div style="display: flex; margin-bottom: 2px;">
+            <span style="font-weight: 600; width: 96px;">Title:</span>
+            <span>{ home.Title }</span>
+        </div>
+        <div style="display: flex; margin-bottom: 2px;">
+            <span style="font-weight: 600; width: 96px;">Url:</span>
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{ home.Url }</span>
+        </div>
+        if len(home.ImageUrl) > 0 {
+            <div style="display: flex; margin-bottom: 2px;">
+                <img width="280px" src={ home.ImageUrl }/>
+            </div>
+        }
+        <div style="display: flex; margin-bottom: 2px;">
+            <span style="font-weight: 600; width: 96px;">Notes:</span>
+            <span>{ home.Notes }</span>
+        </div>
+        if !home.RemoveRequestAt.IsZero(){
+
+            <div style="display: flex; margin-bottom: 2px;">
+                <span style="font-weight: 600; width: 96px;">RemoveRequestAt:</span>
+                <span>   ({ humanize.Time(home.RemoveRequestAt) })</span>
+            </div>
+        }
+        <div style="float: right">
+            <button hx-get={ fmt.Sprintf("/homes/%d?viewMode=edit", home.ID) } class="btn-edit">Edit</button>
+        </div>
+    </div>
 }
+
 
 templ homeView(home Home, msg string, pointMeta PointMeta, ratings []HomeFactorAndRating) {
     <div class="space-y-4" hx-target="this">

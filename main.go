@@ -989,21 +989,29 @@ func getHomeFactorRating(db *gorm.DB) http.HandlerFunc {
 	}
 }
 
-// createHome handler with db dependency injection
 func homeHandler(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Print("==== Home Handler ====")
+		log.Print("==== Home Handler ==== " + r.Method)
 		switch r.Method {
 		case "GET":
-			lat := r.URL.Query().Get("lat")
-			lng := r.URL.Query().Get("lng")
+			viewMode := r.URL.Query().Get("viewMode")
+			log.Printf("homeHandler - viewMode %s", viewMode)
+			switch viewMode {
+			case "list":
+				homes := GetHomes(db)
+				pointList := pointListTable(homes, "")
+				pointList.Render(GetContext(r), w)
+				return
+			default:
+				lat := r.URL.Query().Get("lat")
+				lng := r.URL.Query().Get("lng")
 
-			pointMeta := GetPointMeta(db)
+				pointMeta := GetPointMeta(db)
 
-			homeForm := homeForm(pointMeta, lat, lng, "")
-			homeForm.Render(GetContext(r), w)
-			return
-
+				homeForm := homeForm(pointMeta, lat, lng, "")
+				homeForm.Render(GetContext(r), w)
+				return
+			}
 		case "DELETE":
 			idStr := r.URL.Query().Get("id")
 			id, err := strconv.Atoi(idStr)
@@ -1098,7 +1106,7 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 				idStr := r.URL.Query().Get("id")
 				if len(idStr) == 0 {
 					homes := GetHomes(db)
-					pointList := pointList(homes, "")
+					pointList := pointListTable(homes, "")
 
 					pointList.Render(GetContext(r), w)
 					return

@@ -36,8 +36,8 @@ func span() templ.Component {
 
 func mapActor() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_mapActor_b1de`,
-		Function: `function __templ_mapActor_b1de(){/**
+		Name: `__templ_mapActor_ef5c`,
+		Function: `function __templ_mapActor_ef5c(){/**
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Map} L 
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Marker} L.Marker
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').LatLng} L.LatLng
@@ -259,11 +259,6 @@ getMap(){
     initMap() {
       this.mapMeta = JSON.parse(document.getElementById(this.mapContainerId).getAttribute('data-meta')) 
 
-
-
-
-
-      if(this.mapMeta.ProcessMode){
         this.map = L.map(this.mapContainerId, {
           center: [this.mapMeta.Lat, this.mapMeta.Lng],
           zoom: this.mapMeta.Zoom,
@@ -274,18 +269,20 @@ getMap(){
         window.myMap = this.map;
         window.mapActor = this;
 
-        const mapProcessingMeta = JSON.parse(document.getElementById(this.mapContainerId).getAttribute('data-processing-meta'))
-        this.handleMapProcessing(mapProcessingMeta)
 
-        return
-      }
+      //if(this.mapMeta.ProcessMode){
+      //  const mapProcessingMeta = JSON.parse(document.getElementById(this.mapContainerId).getAttribute('data-processing-meta'))
+      //  this.handleMapProcessing(mapProcessingMeta)
+//
+      //  return
+      //}
       
-      this.map = L.map(this.mapContainerId, {
+    /*  this.map = L.map(this.mapContainerId, {
         center: [this.mapMeta.Lat, this.mapMeta.Lng],
         zoom: this.mapMeta.Zoom,
         layers: this.layers,
         preferCanvas: true
-      })
+      })*/
 
 
        L.Control.geocoder({
@@ -293,45 +290,32 @@ getMap(){
         collapsed: false,
         position: 'topleft',
       })
-        .on('markgeocode', function(e) {
-          window.mapActor.addPoint(e.geocode.center)
+      .on('markgeocode', function(e) {
+        window.mapActor.addPoint(e.geocode.center)
 
-          var bbox = e.geocode.bbox;  
-          var poly = L.polygon([
-            bbox.getSouthEast(),
-            bbox.getNorthEast(),
-            bbox.getNorthWest(),
-            bbox.getSouthWest()
-          ]).addTo(window.mapActor.map);
+        var bbox = e.geocode.bbox;  
+        var poly = L.polygon([
+          bbox.getSouthEast(),
+          bbox.getNorthEast(),
+          bbox.getNorthWest(),
+          bbox.getSouthWest()
+        ]).addTo(window.mapActor.map);
 
 
-
+          
           window.mapActor.map.fitBounds(poly.getBounds());
         })
         .addTo(window.mapActor.map);
 
-
-
-
       this.setLayers({})
 
-        this.map.on('popupopen', function(e) {
-              const popups = document.querySelectorAll(".leaflet-popup-content-wrapper")
-              popups.forEach((p) => {
-                  htmx.process(p)
-              })
-              const popup = e.popup; // e.popup refers to the currently opened popup
+      this.map.on('popupopen', function(e) {
+            const popups = document.querySelectorAll(".leaflet-popup-content-wrapper")
+            popups.forEach((p) => {
+                htmx.process(p)
+            })
 
-        // Update the popup to refresh its size
-        if (popup) {
-   //         popup.update();
-        }
-          });
-
-   /*   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(this.map);*/
-
+        });
       this.map.on('click', (e) => this.handleMapClick(e, this.map))
       this.map.on('moveend', (e) => this.handleMapMoveEnd(e))
       this.map.on('zoonend', (e) => this.handleMapMoveEnd(e))
@@ -460,6 +444,11 @@ getMap(){
     resizeModeIndicator.style.display = window.mapActor.resizeMode ? 'block' : 'none';
   }
 
+  panMap(latLnt){
+    window.mapActor.map.panTo(latLnt)
+    window.mapActor.map.setZoom(17)
+  }
+
   setLayers(newLayers) { 
     if (window.layerControl) {
       window.layerControl.remove();
@@ -574,8 +563,9 @@ getMap(){
 
 handleMapClick(event, map){
     const { latlng } = event;
+    console.log(` + "`" + `map click ${latlng}` + "`" + `)
     
-    const isControlClick = event.originalEvent.target.localName !== "canvas"
+    const isControlClick = event.originalEvent.target.parentElement.classList.contains('controls')
     if(isControlClick){
         return
     }
@@ -594,7 +584,7 @@ handleMapClick(event, map){
 
             if(!window.existingNewAreaPoints){
                 window.existingNewAreaPoints = [[latlng.lat, latlng.lng]]
-                const polyGon = window.leaflet.polygon(window.existingNewAreaPoints, {color: 'green'}).addTo(map);        
+                const polyGon = window.leaflet.polygon(window.existingNewAreaPoints, {color: 'green'}).addTo(window.mapActor.map);        
                 window.existingNewArea = polyGon  
             }else {
                 
@@ -605,7 +595,7 @@ handleMapClick(event, map){
               window.existingNewAreaPoints.push(newPoint);
               
               // Draw the line between the previous point and the new point
-              window.leaflet.polyline([ previousPoint , newPoint], {color: 'green'}).addTo(map);
+              window.leaflet.polyline([ previousPoint , newPoint], {color: 'green'}).addTo(window.mapActor.map);
           
               // Redraw the polygon if needed
               if (window.existingNewArea) {
@@ -622,6 +612,19 @@ handleMapClick(event, map){
         case '---': {
             window.mapActor.highlightControls()
             break;
+        }
+        case 'existing-points':
+          // query the all parent nodes for a 'data-home' attribute:
+          const homeData = event.originalEvent.target.closest('[data-home]').getAttribute('data-home')
+          if(homeData){
+            const homeObj = JSON.parse(homeData)
+            window.mapActor.panMap(new L.LatLng(homeObj.Lat, homeObj.Lng));
+          }else{
+            console.error('homeData not found')
+          }
+          
+        case 'factor':{
+          break;
         }
         default: {
             console.error(` + "`" + `mode  "${mode}" not found` + "`" + `)
@@ -702,7 +705,7 @@ handleMapMoveEnd(e){
      * @throws {Error} If the mode is invalid.
      */
     setMode(newMode) {
-      if (['none', 'point', 'area', 'image', 'add-image', 'navigate', 'manage', 'export', 'import', 'factor'].includes(newMode)) {
+      if (['none', 'point', 'area', 'image', 'add-image', 'navigate', 'manage', 'export', 'import', 'factor', 'existing-points'].includes(newMode)) {
         if(newMode === 'image' && window.mapActor.mode !== 'image'){
           const firstImgBtn = document.querySelectorAll('button[data-img-id]')[0]
           if(firstImgBtn){
@@ -1158,7 +1161,7 @@ handleMapMoveEnd(e){
   
       
 }`,
-		Call:       templ.SafeScript(`__templ_mapActor_b1de`),
-		CallInline: templ.SafeScriptInline(`__templ_mapActor_b1de`),
+		Call:       templ.SafeScript(`__templ_mapActor_ef5c`),
+		CallInline: templ.SafeScriptInline(`__templ_mapActor_ef5c`),
 	}
 }

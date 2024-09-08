@@ -75,10 +75,11 @@ type PointMeta struct {
 }
 
 type ActionMode struct {
-	ID      uint
-	Key     string
-	Name    string
-	Details templ.Component
+	ID        uint
+	Key       string
+	Name      string
+	Details   templ.Component
+	FullPanel bool
 }
 
 type PointTypes struct {
@@ -124,7 +125,7 @@ func GetPointMeta(db *gorm.DB) PointMeta {
 			{ID: 4, Key: "area", Name: "Areas", Details: addAreasDescription()},
 			{ID: 6, Key: "manage", Name: "Manage", Details: manageDescription()},
 			{ID: 7, Key: "factor", Name: "Factors", Details: factorListLoad()},
-			{ID: 8, Key: "existing-points", Name: "Existing Points", Details: pointListLoad()},
+			{ID: 8, Key: "existing-points", Name: "Existing Points", Details: pointListLoad(), FullPanel: true},
 		},
 	}
 }
