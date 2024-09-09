@@ -36,8 +36,8 @@ func span() templ.Component {
 
 func mapActor() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_mapActor_a664`,
-		Function: `function __templ_mapActor_a664(){/**
+		Name: `__templ_mapActor_018a`,
+		Function: `function __templ_mapActor_018a(){/**
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Map} L 
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Marker} L.Marker
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').LatLng} L.LatLng
@@ -313,7 +313,8 @@ getMap(){
         });
       this.map.on('click', (e) => this.handleMapClick(e, this.map))
       this.map.on('moveend', (e) => this.handleMapMoveEnd(e))
-      this.map.on('zoonend', (e) => this.handleMapMoveEnd(e))
+      this.map.on('zoomend', (e) => this.handleMapMoveEnd(e))
+     
 
       const ImageOverlayControl = L.Control.extend({
             options: {
@@ -531,7 +532,6 @@ handleMapClick(event, map){
     if(isControlClick){
         return
     }
-    
     let mode = window.mapActor.mode
 
     switch(mode){
@@ -576,6 +576,8 @@ handleMapClick(event, map){
             break;
         }
         case 'existing-points':
+          const controls = document.querySelector('.controls')
+          controls.focus();
           // query the all parent nodes for a 'data-home' attribute:
           const homeData = event.originalEvent.target.closest('[data-home]').getAttribute('data-home')
           if(homeData){
@@ -584,7 +586,7 @@ handleMapClick(event, map){
           }else{
             console.error('homeData not found')
           }
-          
+          break;
         case 'factor':{
           break;
         }
@@ -632,7 +634,7 @@ handleMapMoveEnd(e){
       onAdd: (map) => {
         // Create a div element with the 'custom-control' class
         const controlDiv = L.DomUtil.create('div', 'custom-control');
-
+        L.DomEvent.on(controlDiv, 'mousewheel', L.DomEvent.stopPropagation);
         controlDiv.innerHTML = ` + "`" + `<div hx-get="/controls" hx-trigger="every 1s" hx-swap="outerHTML">loading..</div>` + "`" + `
 
         // Set the select value based on the current query parameter
@@ -1143,7 +1145,7 @@ handleMapMoveEnd(e){
   
       
 }`,
-		Call:       templ.SafeScript(`__templ_mapActor_a664`),
-		CallInline: templ.SafeScriptInline(`__templ_mapActor_a664`),
+		Call:       templ.SafeScript(`__templ_mapActor_018a`),
+		CallInline: templ.SafeScriptInline(`__templ_mapActor_018a`),
 	}
 }

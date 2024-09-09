@@ -52,7 +52,7 @@ func resizeModeWords() templ.Component {
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<script>\n  document.querySelectorAll('[data-img-action]').forEach(button => {\n        button.addEventListener('click', function(evt) {\n          evt.preventDefault()\n          const action = this.getAttribute('data-img-action');\n      \n          switch (action) {\n            case 'resize-v': window.mapActor.actions.resizeImage(1.1); break;\n            case 'resize-b': window.mapActor.actions.resizeImage(1.01); break;\n            case 'resize-n': window.mapActor.actions.resizeImage(0.99); break;\n            case 'resize-m': window.mapActor.actions.resizeImage(0.9); break;\n            case 'move-up': window.mapActor.actions.moveImage(0.0005, 0); break;\n            case 'move-down': window.mapActor.actions.moveImage(-0.0005, 0); break;\n            case 'move-left': window.mapActor.actions.moveImage(0, -0.0005); break;\n            case 'move-right': window.mapActor.actions.moveImage(0, 0.0005); break;\n            case 'opacity-down': window.mapActor.actions.adjustOpacity(-0.1); break;\n            case 'opacity-up': window.mapActor.actions.adjustOpacity(0.1); break;\n            case 'remove': window.mapActor.actions.removeImage(); break;\n            case 'exit-resize': window.mapActor.actions.exitResizeMode(); break;\n            case 'shorter': window.mapActor.actions.adjustHeight(0.99); break;\n            case 'taller': window.mapActor.actions.adjustHeight(1.01); break;\n            case 'less-wide': window.mapActor.actions.adjustWidth(0.99); break;\n            case 'wider': window.mapActor.actions.adjustWidth(1.01); break;\n          }\n        });\n      })\n      window.mapActor.map.doubleClickZoom.disable();\n  </script><div id=\"resizeModeIndicator\" style=\"line-height:12px;\" class=\"resize-mode text-sm text-gray-500 bg-yellow-100 p-2 rounded-md\"><div hx-get=\"/image-overlay?viewMode=controls\" hx-swap=\"outerHTML\" hx-trigger=\"click, every 1s\"></div><div>Resize Mode Active <br></div><div><button style=\"margin: 5px; padding: 5px 5px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;\" data-img-action=\"move-up\">Move Up (W)</button> <button style=\"margin: 5px; padding: 5px 5px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;\" data-img-action=\"move-down\">Move Down (S)</button> <button style=\"margin: 5px; padding: 5px 5px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;\" data-img-action=\"move-left\">Move Left (A)</button> <button style=\"margin: 5px; padding: 5px 5px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;\" data-img-action=\"move-right\">Move Right (D)</button></div><div><button style=\"margin: 5px; padding: 5px 5px; background-color: #F5A623; color: white; border: none; border-radius: 2px;\" data-img-action=\"resize-m\">Larger (++) (m)</button> <button style=\"margin: 5px; padding: 5px 5px; background-color: #F5A623; color: white; border: none; border-radius: 2px;\" data-img-action=\"resize-n\">Larger (+) (n)</button> <button style=\"margin: 5px; padding: 5px 5px; background-color: #F5A623; color: white; border: none; border-radius: 2px;\" data-img-action=\"resize-v\">Smaller (--) (v)</button> <button style=\"margin: 5px; padding: 5px 5px; background-color: #F5A623; color: white; border: none; border-radius: 2px;\" data-img-action=\"resize-b\">Smaller (-) (b)</button></div><div><button style=\"margin: 5px; padding: 5px 5px; background-color: #50E3C2; color: white; border: none; border-radius: 4px;\" data-img-action=\"opacity-down\">Opacity Down ([)</button> <button style=\"margin: 5px; padding: 5px 5px; background-color: #50E3C2; color: white; border: none; border-radius: 4px;\" data-img-action=\"opacity-up\">Opacity Up (])</button></div><div><button style=\"margin: 5px; padding: 5px 10px; background-color: #B8E986; color: white; border: none; border-radius: 4px;\" data-img-action=\"shorter\">Shorter (h)</button> <button style=\"margin: 5px; padding: 5px 10px; background-color: #B8E986; color: white; border: none; border-radius: 4px;\" data-img-action=\"taller\">Taller (H)</button> <button style=\"margin: 5px; padding: 5px 10px; background-color: #B8E986; color: white; border: none; border-radius: 4px;\" data-img-action=\"less-wide\">Less Wide (j)</button> <button style=\"margin: 5px; padding: 5px 10px; background-color: #B8E986; color: white; border: none; border-radius: 4px;\" data-img-action=\"wider\">Wider (J)</button></div></div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<script>\n  document.querySelectorAll('[data-img-action]').forEach(button => {\n        button.addEventListener('click', function(evt) {\n          evt.preventDefault()\n          const action = this.getAttribute('data-img-action');\n      \n          switch (action) {\n            case 'resize-v': window.mapActor.actions.resizeImage(1.1); break;\n            case 'resize-b': window.mapActor.actions.resizeImage(1.01); break;\n            case 'resize-n': window.mapActor.actions.resizeImage(0.99); break;\n            case 'resize-m': window.mapActor.actions.resizeImage(0.9); break;\n            case 'move-up': window.mapActor.actions.moveImage(0.0005, 0); break;\n            case 'move-down': window.mapActor.actions.moveImage(-0.0005, 0); break;\n            case 'move-left': window.mapActor.actions.moveImage(0, -0.0005); break;\n            case 'move-right': window.mapActor.actions.moveImage(0, 0.0005); break;\n            case 'opacity-down': window.mapActor.actions.adjustOpacity(-0.1); break;\n            case 'opacity-up': window.mapActor.actions.adjustOpacity(0.1); break;\n            case 'remove': window.mapActor.actions.removeImage(); break;\n            case 'exit-resize': window.mapActor.actions.exitResizeMode(); break;\n            case 'shorter': window.mapActor.actions.adjustHeight(0.99); break;\n            case 'taller': window.mapActor.actions.adjustHeight(1.01); break;\n            case 'less-wide': window.mapActor.actions.adjustWidth(0.99); break;\n            case 'wider': window.mapActor.actions.adjustWidth(1.01); break;\n          }\n        });\n      })\n      window.mapActor.map.doubleClickZoom.disable();\n  </script><div id=\"resizeModeIndicator\" class=\"resize-mode text-sm text-gray-500 bg-yellow-100 p-2 rounded-md\" style=\"overflow-y:auto; overflow-x:none; max-height: 36rem; line-height:12px;\"><div hx-get=\"/image-overlay?viewMode=controls\" hx-swap=\"outerHTML\" hx-trigger=\"click, every 1s\"></div><div>Resize Mode Active <br></div><div><button style=\"margin: 5px; padding: 5px 5px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;\" data-img-action=\"move-up\">Move Up (W)</button> <button style=\"margin: 5px; padding: 5px 5px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;\" data-img-action=\"move-down\">Move Down (S)</button> <button style=\"margin: 5px; padding: 5px 5px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;\" data-img-action=\"move-left\">Move Left (A)</button> <button style=\"margin: 5px; padding: 5px 5px; background-color: #4A90E2; color: white; border: none; border-radius: 4px;\" data-img-action=\"move-right\">Move Right (D)</button></div><div><button style=\"margin: 5px; padding: 5px 5px; background-color: #F5A623; color: white; border: none; border-radius: 2px;\" data-img-action=\"resize-m\">Larger (++) (m)</button> <button style=\"margin: 5px; padding: 5px 5px; background-color: #F5A623; color: white; border: none; border-radius: 2px;\" data-img-action=\"resize-n\">Larger (+) (n)</button> <button style=\"margin: 5px; padding: 5px 5px; background-color: #F5A623; color: white; border: none; border-radius: 2px;\" data-img-action=\"resize-v\">Smaller (--) (v)</button> <button style=\"margin: 5px; padding: 5px 5px; background-color: #F5A623; color: white; border: none; border-radius: 2px;\" data-img-action=\"resize-b\">Smaller (-) (b)</button></div><div><button style=\"margin: 5px; padding: 5px 5px; background-color: #50E3C2; color: white; border: none; border-radius: 4px;\" data-img-action=\"opacity-down\">Opacity Down ([)</button> <button style=\"margin: 5px; padding: 5px 5px; background-color: #50E3C2; color: white; border: none; border-radius: 4px;\" data-img-action=\"opacity-up\">Opacity Up (])</button></div><div><button style=\"margin: 5px; padding: 5px 10px; background-color: #B8E986; color: white; border: none; border-radius: 4px;\" data-img-action=\"shorter\">Shorter (h)</button> <button style=\"margin: 5px; padding: 5px 10px; background-color: #B8E986; color: white; border: none; border-radius: 4px;\" data-img-action=\"taller\">Taller (H)</button> <button style=\"margin: 5px; padding: 5px 10px; background-color: #B8E986; color: white; border: none; border-radius: 4px;\" data-img-action=\"less-wide\">Less Wide (j)</button> <button style=\"margin: 5px; padding: 5px 10px; background-color: #B8E986; color: white; border: none; border-radius: 4px;\" data-img-action=\"wider\">Wider (J)</button></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -104,7 +104,7 @@ func addImage() templ.Component {
 			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<form hx-post=\"/image-overlay\" hx-encoding=\"multipart/form-data\" hx-swap=\"outerHTML\" id=\"image-form\" class=\"flex flex-col items-center space-y-6 p-6 bg-gray-100 bg-white rounded-lg shadow-md\"><div class=\"leaflet-control-custom flex flex-col items-center p-4 \"><div>Upload New Image</div><input type=\"hidden\" name=\"imgBounds\" id=\"imgBounds\"> <label for=\"file-input\" class=\"text-gray-700 font-semibold\"><div><input type=\"file\" id=\"file-input\" name=\"fileInput\" accept=\"image/*\" class=\"w-full text-gray-600\" required></div></label></div><button type=\"submit\" class=\"px-6 py-2 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600\">Add Image</button></form>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<form hx-post=\"/image-overlay\" hx-encoding=\"multipart/form-data\" hx-swap=\"outerHTML\" id=\"image-form\" class=\"flex flex-col items-center space-y-6 p-6 bg-gray-100 bg-white rounded-lg shadow-md\"><div class=\"leaflet-control-custom flex flex-col items-center p-4 \"><div>Upload New Image</div><input type=\"hidden\" name=\"imgBounds\" id=\"imgBounds\"> <label for=\"file-input\" class=\"text-gray-700 font-semibold\"><div><input type=\"file\" id=\"file-input\" name=\"fileInput\" accept=\"image/*\" style=\"width: 250px\" required></div></label></div><button type=\"submit\" class=\"px-6 py-2 bg-yellow-500 text-white font-semibold rounded-lg shadow-md hover:bg-yellow-600\">Add Image</button></form>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -260,35 +260,48 @@ func imageOverlayEdit(image ImageOverlay, msg string) templ.Component {
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 154, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 153, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"> <label><div>Img Source Link </div><div><input type=\"text\" name=\"imgSourceUrl\" id=\"imgSourceUrl\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"> <label><div><input type=\"text\" name=\"imgSourceUrl\" id=\"imgSourceUrl\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(image.SourceUrl)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 159, Col: 87}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 156, Col: 87}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></div></label></div><br><div><input type=\"hidden\" name=\"ID\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></div></label></div><div><img width=\"280px\" src=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var14 string
-		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.ID))
+		templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/images/%s", image.FileName))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 167, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 162, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></div><br><div><input type=\"hidden\" name=\"ID\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var15 string
+		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.ID))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 166, Col: 72}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -296,12 +309,12 @@ func imageOverlayEdit(image ImageOverlay, msg string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var15 string
-		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(image.Bounds)
+		var templ_7745c5c3_Var16 string
+		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(image.Bounds)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 168, Col: 94}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 167, Col: 94}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -309,12 +322,12 @@ func imageOverlayEdit(image ImageOverlay, msg string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var16 string
-		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%f", image.Opacity))
+		var templ_7745c5c3_Var17 string
+		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%f", image.Opacity))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 171, Col: 125}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 170, Col: 125}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -322,12 +335,12 @@ func imageOverlayEdit(image ImageOverlay, msg string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var17 string
-		templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/image-overlay/%d", image.ID))
+		var templ_7745c5c3_Var18 string
+		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/image-overlay/%d", image.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 179, Col: 64}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 178, Col: 64}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -335,12 +348,12 @@ func imageOverlayEdit(image ImageOverlay, msg string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var18 string
-		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("Are you sure you want to delete overlay image %s?", image.Name))
+		var templ_7745c5c3_Var19 string
+		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("Are you sure you want to delete overlay image %s?", image.Name))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 179, Col: 156}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 178, Col: 156}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -356,12 +369,12 @@ func imageOverlayEdit(image ImageOverlay, msg string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var19 string
-		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(image.Name)
+		var templ_7745c5c3_Var20 string
+		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(image.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 186, Col: 40}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 185, Col: 40}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -369,12 +382,12 @@ func imageOverlayEdit(image ImageOverlay, msg string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var20 string
-		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(image.SourceUrl)
+		var templ_7745c5c3_Var21 string
+		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(image.SourceUrl)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 186, Col: 76}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 185, Col: 76}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -382,12 +395,12 @@ func imageOverlayEdit(image ImageOverlay, msg string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var21 string
-		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(image.Bounds)
+		var templ_7745c5c3_Var22 string
+		templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(image.Bounds)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 186, Col: 105}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 185, Col: 105}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -412,21 +425,21 @@ func uploadImageOverlayKeyForm(image ImageOverlay) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var22 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var22 == nil {
-			templ_7745c5c3_Var22 = templ.NopComponent
+		templ_7745c5c3_Var23 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var23 == nil {
+			templ_7745c5c3_Var23 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<form hx-post=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var23 string
-		templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/image-overlay/%d/key", image.ID))
+		var templ_7745c5c3_Var24 string
+		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("/image-overlay/%d/key", image.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 200, Col: 68}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 199, Col: 68}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -434,12 +447,12 @@ func uploadImageOverlayKeyForm(image ImageOverlay) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var24 string
-		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.ID))
+		var templ_7745c5c3_Var25 string
+		templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.ID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 201, Col: 73}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 200, Col: 73}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -452,16 +465,16 @@ func uploadImageOverlayKeyForm(image ImageOverlay) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var25 string
-			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("data:image/png;base64,%s", image.KeyImage))
+			var templ_7745c5c3_Var26 string
+			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("data:image/png;base64,%s", image.KeyImage))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 203, Col: 75}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 202, Col: 75}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" height=\"100px\" width=\"100px\"> <details><summary>Key image set</summary> <label for=\"file-input\" class=\"text-gray-700 font-semibold\">Edit Key Image <input type=\"file\" id=\"file-input\" name=\"fileInput\" accept=\"image/*\" class=\"w-full text-gray-600\" required></label><div><button type=\"submit\">upload key image</button></div></details>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" height=\"100px\" width=\"100px\"> <details><summary>Key image set</summary> <label for=\"file-input\" class=\"text-gray-700 font-semibold\">Edit Key Image <input type=\"file\" id=\"file-input\" name=\"fileInput\" accept=\"image/*\" class=\"w-full text-gray-600\" style=\"width: 200px\" required></label><div><button type=\"submit\">upload key image</button></div></details>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -470,16 +483,16 @@ func uploadImageOverlayKeyForm(image ImageOverlay) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var26 string
-			templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.ID))
+			var templ_7745c5c3_Var27 string
+			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", image.ID))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 218, Col: 76}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `overlay.templ`, Line: 217, Col: 76}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"> <label for=\"file-input\" class=\"text-gray-700 font-semibold\"><div><input type=\"file\" id=\"file-input\" name=\"fileInput\" accept=\"image/*\" class=\"w-full text-gray-600\" required></div></label><div><button type=\"submit\">upload key image</button></div></details>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"> <label for=\"file-input\" class=\"text-gray-700 font-semibold\"><div><input type=\"file\" id=\"file-input\" name=\"fileInput\" accept=\"image/*\" style=\"width: 200px\" required></div></label><div><button type=\"submit\">upload key image</button></div></details>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

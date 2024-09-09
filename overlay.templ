@@ -37,7 +37,7 @@ templ resizeModeWords() {
       })
       window.mapActor.map.doubleClickZoom.disable();
   </script>
-  <div id="resizeModeIndicator" style="line-height:12px;" class="resize-mode text-sm text-gray-500 bg-yellow-100 p-2 rounded-md">
+  <div id="resizeModeIndicator" class="resize-mode text-sm text-gray-500 bg-yellow-100 p-2 rounded-md"  style="overflow-y:auto; overflow-x:none; max-height: 36rem; line-height:12px;">
     <div hx-get="/image-overlay?viewMode=controls" hx-swap="outerHTML" hx-trigger="click, every 1s"></div>
     
     <div>
@@ -103,7 +103,7 @@ templ addImage(){
         <input type="hidden" name="imgBounds" id="imgBounds" />
           <label for="file-input" class="text-gray-700 font-semibold">
               <div>
-                  <input type="file" id="file-input" name="fileInput" accept="image/*" class="w-full text-gray-600" required/>
+                  <input type="file" id="file-input" name="fileInput" accept="image/*" style="width: 250px" required/>
               </div>
           </label>
       </div>
@@ -149,20 +149,19 @@ templ imageOverlayEdit(image ImageOverlay, msg string){
     <div>
         <label><input type="text" name="imgName" id="imgName" required value={ image.Name }/></label>
     </div>
-
     <div>
       <input type="hidden" name="ID" value={ fmt.Sprintf("%d", image.ID)} />
       <label>
-      <div>Img Source Link 
-      </div>
       <div>
         <input type="text" name="imgSourceUrl" id="imgSourceUrl" value={image.SourceUrl} />
       </div>
-  
+
       </label>
     </div>
-  <br/>
-
+    <div>
+      <img width="280px" src={ fmt.Sprintf("/images/%s", image.FileName) }/>
+    </div>
+    <br/>
     <div>
       <input type="hidden" name="ID" value={ fmt.Sprintf("%d", image.ID)} />
       <label>Img Bounds <input type="text" name="imgBounds" id="imgBounds" value={image.Bounds} required /></label>
@@ -206,7 +205,7 @@ templ uploadImageOverlayKeyForm(image ImageOverlay){
   
             <label for="file-input" class="text-gray-700 font-semibold">
                 Edit Key Image
-                    <input type="file" id="file-input" name="fileInput" accept="image/*" class="w-full text-gray-600" required/>
+                    <input type="file" id="file-input" name="fileInput" accept="image/*" class="w-full text-gray-600" style="width: 200px" required/>
             </label>
             <div>
              <button type="submit">upload key image</button>
@@ -218,7 +217,7 @@ templ uploadImageOverlayKeyForm(image ImageOverlay){
           <input type="hidden" name="ID" value={ fmt.Sprintf("%d", image.ID) } />
            <label for="file-input" class="text-gray-700 font-semibold">
               <div>
-                  <input type="file" id="file-input" name="fileInput" accept="image/*" class="w-full text-gray-600" required/>
+                  <input type="file" id="file-input" name="fileInput" accept="image/*" style="width: 200px" required/>
                        </div>
  </label>
                       <div>

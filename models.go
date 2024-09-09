@@ -118,14 +118,14 @@ func GetPointMeta(db *gorm.DB) PointMeta {
 		},
 		factors: allFactors,
 		actionModes: []ActionMode{
-			{ID: 5, Key: "navigate", Name: "Navigate", Details: navigateDescription()},
-			{ID: 1, Key: "point", Name: "Points", Details: addPointsDescription()},
-			{ID: 2, Key: "image", Name: "Images", Details: resizeModeWords()},
+			{ID: 1, Key: "navigate", Name: "Navigate", Details: navigateDescription()},
+			{ID: 2, Key: "point", Name: "Points", Details: addPointsDescription()},
+			{ID: 3, Key: "existing-points", Name: "Existing Points", Details: pointListLoad(), FullPanel: true},
+			{ID: 4, Key: "image", Name: "Images", Details: resizeModeWords()},
 			//{ID: 3, Key: "add-image", Name: "Add Image", Details: addImage()},
-			{ID: 4, Key: "area", Name: "Areas", Details: addAreasDescription()},
+			{ID: 5, Key: "area", Name: "Areas", Details: addAreasDescription()},
 			{ID: 6, Key: "manage", Name: "Manage", Details: manageDescription()},
 			{ID: 7, Key: "factor", Name: "Factors", Details: factorListLoad()},
-			{ID: 8, Key: "existing-points", Name: "Existing Points", Details: pointListLoad(), FullPanel: true},
 		},
 	}
 }

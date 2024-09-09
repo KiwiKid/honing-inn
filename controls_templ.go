@@ -32,7 +32,7 @@ func mapControls(meta PointMeta, activeControlKey string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"controls\" class=\"controls\" style=\"overflow-y: auto; max-height: 500rem;  background-color: #f3f4f6; padding: 16px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); width: 256px;\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"controls\" class=\"controls\" style=\"overflow-y: auto; max-height: 500rem;  background-color: #f3f4f6; padding: 16px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); width: 300px; overflow-x:none;\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
