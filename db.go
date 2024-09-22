@@ -10,14 +10,13 @@ import (
 // DBInit initializes the database and creates the tables
 func DBInit(config EnvConfig) (*gorm.DB, error) {
 
-	
 	db, err := gorm.Open(sqlite.Open(config.DBUrl), &gorm.Config{})
 	if err != nil {
 		log.Fatal("failed to connect database:", err)
 	}
 
 	// Migrate the schema
-	err = db.AutoMigrate(&Factor{}, &Home{}, &HomeFactorRating{}, &Shape{}, &ShapeType{}, &ShapeKind{}, &ImageOverlay{})
+	err = db.AutoMigrate(&Factor{}, &Home{}, &HomeFactorRating{}, &Shape{}, &ShapeType{}, &ShapeKind{}, &ImageOverlay{}, &ChatType{}, &Chat{}, &ChatResult{})
 	if err != nil {
 		log.Fatal("failed to migrate database:", err)
 	}
@@ -104,13 +103,13 @@ func DeleteShape(db *gorm.DB, shapeId uint) Shape {
 	return shape
 }
 
-func GetHome(db *gorm.DB, id uint) Home {
+func GetHome(db *gorm.DB, id uint) (*Home, error) {
 	var home Home
 	err := db.First(&home, id)
 	if err.Error != nil {
-		log.Fatal("failed to get home:", err.Error)
+		return nil, err.Error
 	}
-	return home
+	return &home, nil
 }
 
 func GetHomes(db *gorm.DB) []Home {
@@ -145,7 +144,7 @@ func GetFactors(db *gorm.DB) []Factor {
 	var factors []Factor
 	err := db.Find(&factors)
 	if err.Error != nil {
-		log.Printf("failed to get factors:", err.Error)
+		log.Printf("failed to get factors: %v", err.Error)
 		factors = []Factor{}
 	}
 	return factors
@@ -160,7 +159,7 @@ func DeleteFactor(db *gorm.DB, id uint) (Factor, error) {
 
 	delErr := db.Delete(&factor)
 	if delErr != nil {
-		log.Printf("failed to delete factor:", delErr)
+		log.Printf("failed to delete factor: %v", delErr)
 		return factor, delErr.Error
 	}
 	return factor, nil
@@ -170,7 +169,7 @@ func GetImgOverlay(db *gorm.DB, id int) ImageOverlay {
 	var overlay ImageOverlay
 	err := db.First(&overlay, id)
 	if err.Error != nil {
-		log.Printf("failed to get overlay:", err.Error)
+		log.Printf("failed to get overlay: %v", err.Error)
 	}
 	return overlay
 }
@@ -179,7 +178,7 @@ func GetImgOverlays(db *gorm.DB) []ImageOverlay {
 	var overlays []ImageOverlay
 	err := db.Find(&overlays)
 	if err.Error != nil {
-		log.Printf("failed to get overlays:", err.Error)
+		log.Printf("failed to get overlays: %v", err.Error)
 		overlays = []ImageOverlay{}
 	}
 	return overlays
@@ -188,7 +187,7 @@ func GetImgOverlays(db *gorm.DB) []ImageOverlay {
 func SaveImgOverlay(db *gorm.DB, overlay ImageOverlay) (*ImageOverlay, error) {
 	err := db.Save(&overlay)
 	if err.Error != nil {
-		log.Printf("failed to save overlay:", err.Error)
+		log.Printf("failed to save overlay: %v", err.Error)
 		return nil, err.Error
 	}
 	return &overlay, nil
@@ -198,10 +197,81 @@ func DeleteImgOverlay(db *gorm.DB, id int) *ImageOverlay {
 	overlay := GetImgOverlay(db, id)
 	err := db.Delete(&overlay)
 	if err.Error != nil {
-		log.Printf("failed to delete overlay:", err.Error)
+		log.Printf("failed to delete overlay: %v", err.Error)
 		return nil
 	}
 	return &overlay
+}
+
+func CreateChatType(db *gorm.DB, chatType ChatType) (*ChatType, error) {
+	err := db.Create(&chatType)
+	if err.Error != nil {
+		return nil, err.Error
+	}
+	return &chatType, nil
+}
+
+func UpdateChatType(db *gorm.DB, chatType ChatType) (*ChatType, error) {
+	err := db.Save(&chatType)
+	if err.Error != nil {
+		return nil, err.Error
+	}
+	return &chatType, nil
+}
+
+func GetChatType(db *gorm.DB, id uint) (*ChatType, error) {
+	var chatType ChatType
+	err := db.First(&chatType, id)
+	if err.Error != nil {
+		return nil, err.Error
+	}
+	return &chatType, nil
+}
+
+func DeleteChat(db *gorm.DB, id uint) (*Chat, error) {
+	chat := Chat{ID: id}
+	err := db.Delete(&chat)
+	if err.Error != nil {
+		return nil, err.Error
+	}
+	return &chat, nil
+}
+
+func GetChatTypes(db *gorm.DB, themeId uint) ([]ChatType, error) {
+	var chatTypes []ChatType
+	err := db.Find(&chatTypes).Where("theme_id = ?", themeId)
+	if err.Error != nil {
+		return nil, err.Error
+	}
+	return chatTypes, nil
+}
+
+func DeleteChatType(db *gorm.DB, id uint) (*ChatType, error) {
+	chatType := ChatType{ID: id}
+	err := db.Delete(&chatType)
+	if err.Error != nil {
+		return nil, err.Error
+	}
+	return &chatType, nil
+}
+
+func GetChats(db *gorm.DB, themeId uint, homeId uint, chatTypeId uint) ([]Chat, error) {
+	var chats []Chat
+	log.Printf("themeId: %v, homeId: %v, chatTypeId: %v", themeId, homeId, chatTypeId)
+	err := db.Preload("Results").Where("theme_id = ? AND home_id = ? AND chat_type = ?", themeId, homeId, chatTypeId).Find(&chats).Error
+	if err != nil {
+		return nil, err
+	}
+	return chats, nil
+}
+
+func GetChat(db *gorm.DB, id uint) (*Chat, error) {
+	var chat Chat
+	err := db.Preload("Results").First(&chat, id)
+	if err.Error != nil {
+		return nil, err.Error
+	}
+	return &chat, nil
 }
 
 func CreateShape(db *gorm.DB, shape Shape) Shape {

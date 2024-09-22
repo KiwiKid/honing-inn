@@ -91,6 +91,8 @@ func GetEnvConfig() EnvConfig {
 	return config
 }
 
+const themeId uint = 1
+
 func main() {
 
 	envConfig := GetEnvConfig()
@@ -139,6 +141,8 @@ func main() {
 
 	r.Post("/factors", createFactor(db))
 
+	r.Get("/chatlist", chatListHandler(db))
+
 	r.Get("/homes/{homeId:[0-9]+}", singleHomeHandler(db))
 	r.Delete("/homes/{homeId:[0-9]+}", singleHomeHandler(db))
 
@@ -159,6 +163,13 @@ func main() {
 	r.Get("/factors", factorHandler(db))
 	r.Post("/factors", factorHandler(db))
 	r.Delete("/factors/{factorId:[0-9]+}", factorHandler(db))
+
+	r.Get("/chat", chatHandler(db))
+	r.Post("/chat", chatHandler(db))
+	r.Delete("/chat/{chatId:[0-9]+}", chatHandler(db))
+
+	r.Get("/chattype", chatTypeHandler(db))
+	r.Post("/chattype", chatTypeHandler(db))
 
 	port := os.Getenv("PORT")
 	if len(port) == 0 {
@@ -324,6 +335,178 @@ func imageOverlayKeyHandler(db *gorm.DB) http.HandlerFunc {
 		}
 	}
 
+}
+
+func chatTypeHandler(db *gorm.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "GET":
+
+			chatTypes, err := GetChatTypes(db, themeId)
+			if err != nil {
+				warning := warning(fmt.Sprintf("Failed to get chat types - %s", err))
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			chatTypeList := chatTypeList(chatTypes, ChatMeta{
+				SelectedChatID: 0,
+				ThemeID:        themeId,
+				HomeID:         0,
+			})
+			chatTypeList.Render(GetContext(r), w)
+			return
+		case "POST":
+			if err := r.ParseForm(); err != nil {
+				warning := warning("chatTypeHandler - Unable to parse form data")
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			chatType := ChatType{
+				Name:    r.FormValue("name"),
+				Prompt:  r.FormValue("prompt"),
+				ThemeID: themeId,
+			}
+
+			chatTypeIDStr := r.FormValue("chatTypeID")
+			if len(chatTypeIDStr) == 0 {
+
+				chat, createErr := CreateChatType(db, chatType)
+				if createErr != nil {
+					warning := warning(fmt.Sprintf("Failed to create chat type - %s", createErr))
+					warning.Render(GetContext(r), w)
+					return
+				}
+
+				success := success(fmt.Sprintf("Created chat type - %s", chat.Name))
+				success.Render(GetContext(r), w)
+				return
+			}
+
+			chatTypeID, err := strconv.Atoi(chatTypeIDStr)
+			if err != nil {
+				warning := warning("Invalid chatTypeID")
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			chatType.ID = uint(chatTypeID)
+			chat, updateErr := UpdateChatType(db, chatType)
+			if updateErr != nil {
+				warning := warning(fmt.Sprintf("Failed to update chat type - %s", updateErr))
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			success := success(fmt.Sprintf("Updated chat type - %s", chat.Name))
+			success.Render(GetContext(r), w)
+			return
+		}
+	}
+}
+
+func chatListHandler(db *gorm.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		log.Print("chatListHandler START \n\n")
+		switch r.Method {
+		case "GET":
+
+			selectedChatIdStr := r.URL.Query().Get("selectedChatId")
+			var selectedChatId int
+			var err error
+			if len(selectedChatIdStr) == 0 {
+				selectedChatId = 0
+			} else {
+
+				selectedChatId, err = strconv.Atoi(selectedChatIdStr)
+				if err != nil {
+					warning := warning("Invalid selectedChatId ID")
+					warning.Render(GetContext(r), w)
+					return
+				}
+			}
+
+			chatTypes, err := GetChatTypes(db, uint(themeId))
+			if err != nil {
+				warning := warning(fmt.Sprintf("Failed to get chatTypes - %s", err))
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			homeIdStr := r.URL.Query().Get("homeId")
+			if homeIdStr == "" {
+				chat := emptyChat(chatTypes, ChatMeta{
+					SelectedChatID: uint(selectedChatId),
+					ThemeID:        themeId,
+					HomeID:         0,
+				}, true)
+				chat.Render(GetContext(r), w)
+				return
+			}
+
+			homeId, err := strconv.Atoi(homeIdStr)
+			if err != nil {
+				warning := warning("Invalid homeIdStr ID")
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			var meta = ChatMeta{
+				ThemeID:        themeId,
+				HomeID:         uint(homeId),
+				SelectedChatID: uint(selectedChatId),
+			}
+
+			var chats []Chat
+			var chatTypeId int
+			chatTypeIDStr := r.URL.Query().Get("chatTypeId")
+			if chatTypeIDStr != "" {
+				log.Printf("CHAT TYPE ID PROVIDED %s", chatTypeIDStr)
+				chatTypeId, err = strconv.Atoi(chatTypeIDStr)
+				if err != nil {
+					warning := warning("Invalid chatTypeId ID")
+					warning.Render(GetContext(r), w)
+					return
+				}
+
+				meta.ChatTypeID = uint(chatTypeId)
+
+				chats, err = GetChats(db, themeId, uint(homeId), uint(chatTypeId))
+				if err != nil {
+					warning := warning(fmt.Sprintf("Failed to get chats - %s", err))
+					warning.Render(GetContext(r), w)
+					return
+				}
+
+			}
+
+			/*(if len(chats) == 0 {
+
+				log.Printf("No chats found for themeId %d homeId [%d] and chatTypeId [%d]", themeId, homeId, chatTypeId)
+				chatTypeId = 0
+
+				ec := emptyChat(chatTypes, ChatMeta{
+					SelectedChatID: uint(selectedChatId),
+					ThemeID:        themeId,
+					ChatTypeID:     uint(chatTypeId),
+					HomeID:         uint(homeId),
+				}, true)
+				ec.Render(GetContext(r), w)
+				return
+			}*/
+
+			log.Printf("chatListHandler - chats %v\n\n meta %+v chatTypeId %d ", chats, meta, chatTypeId)
+			chatList := chatList(chats, meta, uint(chatTypeId))
+			chatList.Render(GetContext(r), w)
+			return
+
+		default:
+			warning := warning("Method not allowed")
+			warning.Render(GetContext(r), w)
+			return
+		}
+	}
 }
 
 func imageOverlayHandler(db *gorm.DB, envConfig EnvConfig) http.HandlerFunc {
@@ -636,7 +819,7 @@ func classifyImageWithHuggingFace(request MapRequest, envConfig EnvConfig) ([]by
 	const HuggingFaceAPIURL = "https://api-inference.huggingface.co/models/{model_name}"
 	req, err := http.NewRequest("POST", HuggingFaceAPIURL, &body)
 	if err != nil {
-		log.Printf("Error creating request to Hugging Face API: ", err)
+		log.Printf("Error creating request to Hugging Face API: %v", err)
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+envConfig.HuggingFaceAPIToken)
@@ -645,7 +828,7 @@ func classifyImageWithHuggingFace(request MapRequest, envConfig EnvConfig) ([]by
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Printf("Error creating http client to Hugging Face API: ", err)
+		log.Printf("Error creating http client to Hugging Face API: %v", err)
 
 		return nil, err
 	}
@@ -834,7 +1017,7 @@ func shapeHandler(db *gorm.DB) http.HandlerFunc {
 				}
 				id, err := strconv.Atoi(idStr)
 				if err != nil {
-					http.Error(w, "Invalid home ID", http.StatusBadRequest)
+					http.Error(w, "add-area-point Invalid home ID", http.StatusBadRequest)
 					return
 				}
 
@@ -902,12 +1085,17 @@ func singleHomeHandler(db *gorm.DB) http.HandlerFunc {
 			// Convert homeIdStr to the appropriate type
 			homeId, err := strconv.Atoi(homeIdStr)
 			if err != nil {
-				warning := warning(fmt.Sprintf("Invalid home ID - %s", homeIdStr))
+				warning := warning(fmt.Sprintf("singleHomeHandler Invalid home ID - %s", homeIdStr))
 				warning.Render(GetContext(r), w)
 				return
 			}
 
-			home := GetHome(db, uint(homeId))
+			home, err := GetHome(db, uint(homeId))
+			if err != nil {
+				warning := warning(fmt.Sprintf("Failed to get home - %s", err))
+				warning.Render(GetContext(r), w)
+				return
+			}
 
 			pointMeta := GetPointMeta(db)
 
@@ -923,15 +1111,59 @@ func singleHomeHandler(db *gorm.DB) http.HandlerFunc {
 					log.Printf("rating %+v", rating)
 				}
 
-				homeForm := homeView(home, "", pointMeta, ratings)
+				homeForm := homeView(*home, "", pointMeta, ratings)
 				homeForm.Render(GetContext(r), w)
+
+				chats, err := GetChats(db, 1, home.ID, 0)
+				if err != nil {
+					warning := warning(fmt.Sprintf("Failed to get chats - %s", err))
+					warning.Render(GetContext(r), w)
+					return
+				}
+
+				meta := ChatMeta{
+					SelectedChatID: 0,
+					ThemeID:        themeId,
+					ChatTypeID:     0,
+					HomeID:         home.ID,
+				}
+				var chatTypeId int
+				chatTypeIDStr := r.URL.Query().Get("chatTypeId")
+				if chatTypeIDStr != "" {
+					log.Printf("CHAT TYPE ID PROVIDED")
+					chatTypeId, err = strconv.Atoi(chatTypeIDStr)
+					if err != nil {
+						warning := warning("Invalid chatTypeId ID")
+						warning.Render(GetContext(r), w)
+						return
+					}
+				} else {
+					log.Printf("CHAT TYPE ID NOT PROVIDED")
+
+					chatTypes, err := GetChatTypes(db, uint(themeId))
+					if err != nil {
+						warning := warning(fmt.Sprintf("Failed to get chatTypes - %s", err))
+						warning.Render(GetContext(r), w)
+						return
+					}
+
+					chatTypeId = 0
+
+					ec := emptyChat(chatTypes, meta, true)
+					ec.Render(GetContext(r), w)
+					return
+				}
+
+				log.Printf("singleHomeHandler - chats %v\n\n meta %+v chatTypeId %d ", chats, meta, chatTypeId)
+				chatlist := chatList(chats, meta, uint(chatTypeId))
+				chatlist.Render(GetContext(r), w)
 				return
 			case "edit":
 				log.Printf("=============home - edit")
 
 				ratings := GetHomeRatings(db, home.ID)
 
-				homeForm := homeEditForm(home, "", pointMeta, ratings)
+				homeForm := homeEditForm(*home, "", pointMeta, ratings)
 				homeForm.Render(GetContext(r), w)
 				return
 			default:
@@ -972,7 +1204,7 @@ func getHomeFactorRating(db *gorm.DB) http.HandlerFunc {
 			homeId := r.URL.Query().Get("homeId")
 			homeIdInt, err := strconv.Atoi(homeId)
 			if err != nil {
-				warning := warning("Invalid home ID")
+				warning := warning("getHomeFactorRating Invalid home ID")
 				warning.Render(GetContext(r), w)
 
 				return
@@ -980,9 +1212,14 @@ func getHomeFactorRating(db *gorm.DB) http.HandlerFunc {
 
 			homeFactorVoteList := GetHomeRatings(db, uint(homeIdInt))
 
-			home := GetHome(db, uint(homeIdInt))
+			home, err := GetHome(db, uint(homeIdInt))
+			if err != nil {
+				warning := warning("Failed to get home")
+				warning.Render(GetContext(r), w)
+				return
+			}
 
-			homeFactorVoteListComp := factorVoteList(homeFactorVoteList, home, "")
+			homeFactorVoteListComp := factorVoteList(homeFactorVoteList, *home, "")
 			homeFactorVoteListComp.Render(GetContext(r), w)
 			return
 		}
@@ -1017,7 +1254,7 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 			idStr := r.URL.Query().Get("id")
 			id, err := strconv.Atoi(idStr)
 			if err != nil {
-				http.Error(w, "Invalid home ID", http.StatusBadRequest)
+				http.Error(w, "homeHandler - DELETE - Invalid home ID", http.StatusBadRequest)
 				return
 			}
 
@@ -1089,7 +1326,7 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 			}
 
 			idStr := r.FormValue("ID")
-			if len(idStr) == 0 {
+			if len(idStr) != 0 {
 				id, err := strconv.Atoi(idStr)
 				if err != nil {
 					http.Error(w, "Invalid home ID", http.StatusBadRequest)
@@ -1240,9 +1477,14 @@ func createHomeFactorRating(db *gorm.DB) http.HandlerFunc {
 
 		homeFactorVoteList := GetHomeRatings(db, uint(homeID))
 
-		home := GetHome(db, uint(homeID))
+		home, err := GetHome(db, uint(homeID))
+		if err != nil {
+			warn := warning("Failed to get home")
+			warn.Render(GetContext(r), w)
+			return
+		}
 
-		homeFactorVoteListComp := factorVoteList(homeFactorVoteList, home, fmt.Sprintf("Home factor rating created - %d * for %d", stars, factorID))
+		homeFactorVoteListComp := factorVoteList(homeFactorVoteList, *home, fmt.Sprintf("Home factor rating created - %d * for %d", stars, factorID))
 		homeFactorVoteListComp.Render(GetContext(r), w)
 		return
 		// Render success message

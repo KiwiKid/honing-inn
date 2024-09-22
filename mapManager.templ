@@ -44,6 +44,10 @@ templ mapManager(meta PointMeta ){
         @editFactor(f, "")
     }
     @addFactor()
+
+    <div hx-get="/chattype" hx-trigger="every 1s" hx-swap="outerHTML">laoding chat types..</div>
+
+
     </body>
 }
 

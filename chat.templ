@@ -1,0 +1,99 @@
+package main 
+
+import (
+    "fmt"
+)
+
+templ loadChat(themeId uint, homeId uint, chatTypeId uint){
+    <div hx-get={ fmt.Sprintf("/chatlist?themeId=%d&homeId=%d&chatTypeId=%d", themeId, homeId, chatTypeId)} hx-trigger="revealed" hx-swap="outerHTML"></div>
+}
+
+templ chatTypeNav(chatTypes []ChatType, chatMeta ChatMeta){
+    <div>[chatTypeNav]
+    if chatMeta.HomeID == 0 {
+        <div>Select a Home to get started</div>
+    } else {
+        for _, ct := range chatTypes {
+            <button hx-get={ fmt.Sprintf("/chatlist?themeId=%d&homeId=%d&chatTypeId=%d", chatMeta.ThemeID, chatMeta.HomeID, ct.ID)}>{ct.Name}</button>
+        }
+        @addChatType(false, chatMeta.ThemeID)
+    }
+    </div>
+}
+
+templ emptyChat(chatTypes []ChatType, chatMeta ChatMeta, swapOOB bool){
+    
+    <div id="chat-box" 
+        if swapOOB { 
+            hx-swap-oob="true"
+        }
+        class="">[emptyChat]
+        <div>
+            @chatTypeNav(chatTypes, chatMeta)
+            { fmt.Sprintf("%+v", chatMeta)}
+        </div>
+        if chatMeta.ChatTypeID > 0 {
+             [[emptyChat.ChatTypeID]]
+            @createChatForm(chatMeta, chatMeta.ChatTypeID)
+        }
+    </div>
+}
+
+
+templ createChatList(){
+    <div>[createChatList]</div>
+}
+
+templ chatList(chats []Chat, chatMeta ChatMeta, chatTypeID uint){
+    <div hx-swap-oob="true" id="chat-box" style="background-color: #f3f4f6; " >
+            <button hx-get={ fmt.Sprintf("/homes/%d?viewMode=view", chatMeta.HomeID) }>&lt;&lt;</button>
+
+    chatList for { fmt.Sprintf("%d len:%d", chatMeta.HomeID, len(chats)) } 
+        [[chatList]]
+        if len(chats) == 0 {
+            if chatMeta.ChatTypeID > 0 {
+                [[chatList.ChatTypeID]]
+                @createChatForm(chatMeta, chatTypeID)
+            }
+        }
+        for _, c := range chats {
+            @chat(c)
+        }
+    </div>
+}
+
+templ chat(chat Chat){
+    <div data-theme-id={fmt.Sprintf("%d", chat.ThemeID)} data-home-id={ fmt.Sprintf("%d", chat.HomeID)} class="max-w-2xl mx-auto p-4 space-y-4">[[chat]]
+             <details><summary>prompt</summary>ChatTypeTitle: {chat.ChatTypeTitle} { chat.Prompt }</details>
+             <button hx-delete={ fmt.Sprintf("/chat/%d", chat.ID)} >delete</button>
+        for _, res := range chat.Results {
+            if res.Role == "assistant" {
+                <div class="bg-gray-100 text-gray-800 p-3 rounded-lg w-fit max-w-xs">
+                    <p><pre width="100%">{res.Result}</pre></p>
+                </div>
+            } else {
+                <div class="bg-blue-500 text-white p-3 rounded-lg w-fit max-w-xs ml-auto text-right">
+                    <p><pre>{res.Result}</pre></p>
+                </div>
+            }
+                    <div class="text-lg font-semibold text-gray-700 mb-4">
+
+        </div>
+                       
+
+        }
+    </div>
+}
+
+
+
+templ createChatForm(chatMeta ChatMeta, chatTypeID uint){
+    <div>[createChatForm]
+        <form hx-post="/chat">
+            <input type="hidden" name="HomeID" value={ fmt.Sprintf("%d", chatMeta.HomeID) }/>
+            <input type="hidden" name="chatTypeID" value={ fmt.Sprintf("%d", chatTypeID) }/>
+            <input type="hidden" name="ThemeID" value={ fmt.Sprintf("%d", chatMeta.ThemeID) }/>
+            <button type="submit">Research</button>
+        </form>
+    </div>
+}

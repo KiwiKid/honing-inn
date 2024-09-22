@@ -181,6 +181,7 @@ templ imageInput(url string, oob bool){
 
 
 templ homeEditForm(home Home, msg string, pointMeta PointMeta, ratings []HomeFactorAndRating){
+    
     <div hx-target="this">
     <form hx-post="/homes?viewMode=view" class="space-y-4 homeEditForm" >
         if len(msg) > 0 {
@@ -193,40 +194,42 @@ templ homeEditForm(home Home, msg string, pointMeta PointMeta, ratings []HomeFac
         <input type="hidden" name="lng" value={ fmt.Sprintf("%v", home.Lng) }>
 
 
-
         @urlInput(home.Url, home.Title, false)
 
 
-        <!-- Labeled input fields -->
-        <div id="title-box">
-            <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
-            <input  type="text" name="title" id="title" value={ home.Title } class="form-input mt-1 block w-full">
-        </div>
+                <!-- Labeled input fields -->
+                <div id="title-box">
+                    <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
+                    <input  type="text" name="title" id="title" value={ home.Title } class="form-input mt-1 block w-full">
+                </div>
 
 
-        <div id="notes-box">
-            <label for="notes" class="block text-sm font-medium text-gray-700">Notes</label>
-            <input type="text" name="notes" id="notes" value={ home.Notes } class="form-input mt-1 block w-full">
-        </div>
+                <div id="notes-box">
+                    <label for="notes" class="block text-sm font-medium text-gray-700">Notes</label>
+                    <input type="text" name="notes" id="notes" value={ home.Notes } class="form-input mt-1 block w-full">
+                </div>
 
-        @imageInput(home.ImageUrl, false)
+                @imageInput(home.ImageUrl, false)
 
 
-        if !home.RemoveRequestAt.IsZero(){
-            <div style="padding: 5px;">
-            ({ humanize.Time(home.RemoveRequestAt) })
-        </div>
-        }
-         
-        <!-- Buttons -->
-        <div class="flex space-x-4">
-            <button type="submit" class="form-button">Save</button>
-            <button type="button" class="form-button bg-red-500 hover:bg-red-600" hx-delete={ fmt.Sprintf("/homes/%d", home.ID) } hx-confirm="are you sure you want to delete this house?">Delete</button>
-            <button type="button" class="form-button bg-gray-500 hover:bg-gray-600" onclick="location.reload();">Cancel</button>
-        </div>
+                if !home.RemoveRequestAt.IsZero(){
+                    <div style="padding: 5px;">
+                    ({ humanize.Time(home.RemoveRequestAt) })
+                </div>
+                }
+                
+                <!-- Buttons -->
+                <div class="flex space-x-4">
+                    <button type="submit" class="form-button">Save</button>
+                    <button type="button" class="form-button bg-red-500 hover:bg-red-600" hx-delete={ fmt.Sprintf("/homes/%d", home.ID) } hx-confirm="are you sure you want to delete this house?">Delete</button>
+                    <button type="button" class="form-button bg-gray-500 hover:bg-gray-600" onclick="location.reload();">Cancel</button>
+                </div>
+            
 
         
     </form>
-    @factorVoteList(ratings, home, "")
+     if len(home.Url) > 0 {
+        @factorVoteList(ratings, home, "")
+     }
     </div>
 }

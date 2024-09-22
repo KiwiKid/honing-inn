@@ -1,0 +1,91 @@
+package main
+
+import (
+    "fmt"
+)
+
+
+templ chatTypeList(chatTypes []ChatType, chatMeta ChatMeta){
+    <div class="space-y-4">
+        <h2 class="text-lg font-semibold">Chat Types</h2>
+        <div class="space-y-2">
+            for _, ct := range chatTypes {
+                <div class="bg-gray-100 p-4 rounded shadow-sm text-sm">{ fmt.Sprintf("%+v", ct)}</div>
+                @editChatType(chatMeta.ThemeID, ct)
+            }
+        </div>
+        <div class="mt-4">
+            @addChatType(false, chatMeta.ThemeID)
+        </div>
+    </div>
+}
+
+templ addChatType(isOpen bool, themeId uint){
+    <div hx-target="this">
+        if isOpen {
+            <button hx-get="/chattype?view=add" 
+                    class="bg-blue-500 text-white py-2 px-4 rounded shadow hover:bg-blue-600">
+                Add Type
+            </button>
+        } else {
+            <div class="bg-white p-6 rounded-lg shadow-md max-w-lg mx-auto">
+                <form hx-post="/chattype" class="space-y-4">
+                    <input type="hidden" name="themeId" value={fmt.Sprintf("%d", themeId)} />
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Name</label>
+                        <input type="text" name="name" 
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
+                               placeholder="Enter chat type name" />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Prompt</label>
+                        <textarea rows="10" cols="100" type="text" name="prompt" 
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
+                               placeholder="Enter prompt"></textarea>
+                    </div>
+                    
+                    <div>
+                        <button type="submit" 
+                                class="w-full bg-blue-500 text-white py-2 px-4 rounded shadow hover:bg-blue-600">
+                            Add Type
+                        </button>
+                    </div>
+                </form>
+            </div>
+        }
+    </div>
+}
+
+templ editChatType(themeId uint, chatType ChatType){
+    <div hx-target="this">
+        <div class="bg-white p-6 rounded-lg shadow-md max-w-lg mx-auto">
+            <form hx-post="/chattype" class="space-y-4">
+                <input type="hidden" name="themeId" value={fmt.Sprintf("%d", themeId)} />
+                <input type="hidden" name="chatTypeID" value={fmt.Sprintf("%d", chatType.ID)} />
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Name</label>
+                    <input type="text" name="name" value={chatType.Name}
+                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
+                            placeholder="Enter chat type name" />
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Prompt</label>
+                    <textarea rows="10" cols="100" type="text" name="prompt"
+                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
+                            placeholder="Enter prompt" > {chatType.Prompt} </textarea>
+                </div>
+                
+                <div>
+                    <button type="submit" 
+                            class="w-full bg-green-500 text-white py-2 px-4 rounded shadow hover:bg-green-600">
+                        Update Type
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}

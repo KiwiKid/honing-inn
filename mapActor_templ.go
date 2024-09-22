@@ -36,8 +36,8 @@ func span() templ.Component {
 
 func mapActor() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_mapActor_018a`,
-		Function: `function __templ_mapActor_018a(){/**
+		Name: `__templ_mapActor_9963`,
+		Function: `function __templ_mapActor_9963(){/**
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Map} L 
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Marker} L.Marker
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').LatLng} L.LatLng
@@ -353,7 +353,7 @@ getMap(){
         // Add the custom control to the map
     //  this.map.addControl(new ImageOverlayControl({ position: 'bottomleft' }));
 
-      this.addCustomControl();
+      this.addCustomControls();
       // Handle key press events for resize mode
      
                   
@@ -625,7 +625,7 @@ handleMapMoveEnd(e){
         
 
 
-  addCustomControl() {
+  addCustomControls() {
     const CustomControl = L.Control.extend({
       options: {
         position: 'topleft'
@@ -636,31 +636,39 @@ handleMapMoveEnd(e){
         const controlDiv = L.DomUtil.create('div', 'custom-control');
         L.DomEvent.on(controlDiv, 'mousewheel', L.DomEvent.stopPropagation);
         controlDiv.innerHTML = ` + "`" + `<div hx-get="/controls" hx-trigger="every 1s" hx-swap="outerHTML">loading..</div>` + "`" + `
-
-        // Set the select value based on the current query parameter
-        const modeSetting = new URLSearchParams(window.location.search).get('mode') || '---';
-      //  const select = controlDiv.querySelector('#mode');
-//        select.value = modeSetting;
-
-        // Add event listener for changes in mode
-      /*  select.addEventListener('change', (event) => {
-          const selectedMode = event.target.value;
-          this.setMode(selectedMode === '---' ? 'none' : selectedMode);
-          this.addQueryParam('mode', selectedMode);
-        });*/
         htmx.process(controlDiv)
 
 
         return controlDiv;
       },
-
-      onRemove: function(map) {
-        // Nothing to clean up when the control is removed
-      }
     });
 
     // Add the custom control to the map
     this.map.addControl(new CustomControl());
+
+    const ChatControl = L.Control.extend({
+      options: {
+        position: 'bottomright'
+      },
+
+      onAdd: (map) => {
+        // Create a div element with the 'custom-control' class
+        const controlDiv = L.DomUtil.create('div', 'custom-control');
+        controlDiv.style.width = '400px';
+        controlDiv.style.height = '800px';
+        L.DomEvent.on(controlDiv, 'mousewheel', L.DomEvent.stopPropagation);
+        //controlDiv.innerHTML = ` + "`" + `<div hx-get="/chatlist?themeId=1" hx-trigger="every 1s" style="height: 800px; width: 800px;" hx-swap="outerHTML">loading chatlist..</div>` + "`" + `
+        controlDiv.innerHTML = ` + "`" + `<div hx-swap="outerHTML"><div id="chat-box">(select a home to get started)</div></div>` + "`" + `
+
+        htmx.process(controlDiv)
+
+        return controlDiv;
+      }
+      
+    })
+
+    this.map.addControl(new ChatControl());
+
   }
   
     /**
@@ -1145,7 +1153,7 @@ handleMapMoveEnd(e){
   
       
 }`,
-		Call:       templ.SafeScript(`__templ_mapActor_018a`),
-		CallInline: templ.SafeScriptInline(`__templ_mapActor_018a`),
+		Call:       templ.SafeScript(`__templ_mapActor_9963`),
+		CallInline: templ.SafeScriptInline(`__templ_mapActor_9963`),
 	}
 }

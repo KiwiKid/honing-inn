@@ -434,7 +434,7 @@ func shapeList(shapes []Shape, shapeMeta ShapeMeta, homes []Home, imgOverlays []
 		}
 		for _, i := range imgOverlays {
 			var templ_7745c5c3_Var20 string
-			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("CONTROL: %+i", i))
+			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("CONTROL: %+v", i))
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `shapes.templ`, Line: 95, Col: 43}
 			}

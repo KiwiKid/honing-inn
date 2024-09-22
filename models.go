@@ -103,6 +103,37 @@ type ImageOverlay struct {
 	SourceUrl string  `json:"sourceUrl"`
 }
 
+type ChatType struct {
+	ID      uint   `gorm:"primaryKey"`
+	Name    string `json:"name"`
+	Prompt  string `json:"prompt"`
+	ThemeID uint   `json:"theme_id"`
+}
+
+type Chat struct {
+	ID            uint         `gorm:"primaryKey"`
+	ThemeID       uint         `json:"theme_id"`
+	HomeID        uint         `json:"home_id"`
+	ChatType      uint         `json:"chat_type"`
+	ChatTypeTitle string       `json:"chat_type_title"`
+	Prompt        string       `json:"prompt"`
+	Results       []ChatResult `gorm:"foreignKey:ChatID"`
+}
+
+type ChatResult struct {
+	ID     uint   `gorm:"primaryKey"`
+	ChatID uint   `json:"chat_id"` // Foreign key to the Chat
+	Result string `json:"result"`  // Actual result string
+	Role   string `json:"role"`
+}
+
+type ChatMeta struct {
+	SelectedChatID uint
+	ChatTypeID     uint
+	ThemeID        uint
+	HomeID         uint
+}
+
 func GetPointMeta(db *gorm.DB) PointMeta {
 
 	allFactors := GetFactors(db)
@@ -119,9 +150,9 @@ func GetPointMeta(db *gorm.DB) PointMeta {
 		factors: allFactors,
 		actionModes: []ActionMode{
 			{ID: 1, Key: "navigate", Name: "Navigate", Details: navigateDescription()},
-			{ID: 2, Key: "point", Name: "Points", Details: addPointsDescription()},
+			{ID: 2, Key: "point", Name: "Add Points", Details: addPointsDescription()},
 			{ID: 3, Key: "existing-points", Name: "Existing Points", Details: pointListLoad(), FullPanel: true},
-			{ID: 4, Key: "image", Name: "Images", Details: resizeModeWords()},
+			{ID: 4, Key: "image", Name: "Add Images", Details: resizeModeWords()},
 			//{ID: 3, Key: "add-image", Name: "Add Image", Details: addImage()},
 			{ID: 5, Key: "area", Name: "Areas", Details: addAreasDescription()},
 			{ID: 6, Key: "manage", Name: "Manage", Details: manageDescription()},

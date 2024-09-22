@@ -8,15 +8,13 @@ primary_region = 'syd'
 
 [build]
 
-[build.args]
+[env]
   PORT = '8080'
   DATABASE_URL = "/mnt/volume/data.db"
-  PREVIEW_ENV = "true"
   IMAGE_DIR = "/mnt/volume/images"
 
 [http_service]
   internal_port = 8080
-  force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
@@ -28,5 +26,5 @@ primary_region = 'syd'
   cpus = 1
 
 [mounts]
-  source = "sqlite3_volume"
+  source = "sqlite_volume_3"
   destination = "/mnt/volume"
