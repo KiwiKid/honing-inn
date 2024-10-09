@@ -36,8 +36,8 @@ func span() templ.Component {
 
 func mapActor() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_mapActor_9963`,
-		Function: `function __templ_mapActor_9963(){/**
+		Name: `__templ_mapActor_bd2f`,
+		Function: `function __templ_mapActor_bd2f(){/**
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Map} L 
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Marker} L.Marker
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').LatLng} L.LatLng
@@ -83,7 +83,7 @@ class mapActor {
 
       this.editPointPopupOptions = {
         color: 'blue',
-        minWidth: '300'
+        minWidth: '500'
       }
 
       this.actions = {
@@ -658,7 +658,7 @@ handleMapMoveEnd(e){
         controlDiv.style.height = '800px';
         L.DomEvent.on(controlDiv, 'mousewheel', L.DomEvent.stopPropagation);
         //controlDiv.innerHTML = ` + "`" + `<div hx-get="/chatlist?themeId=1" hx-trigger="every 1s" style="height: 800px; width: 800px;" hx-swap="outerHTML">loading chatlist..</div>` + "`" + `
-        controlDiv.innerHTML = ` + "`" + `<div hx-swap="outerHTML"><div id="chat-box">(select a home to get started)</div></div>` + "`" + `
+        controlDiv.innerHTML = ` + "`" + `<div hx-swap="outerHTML"><div id="chat-box">(select a home to get started)         <a href="/mapmanager" target="_">manage</a></div></div>` + "`" + `
 
         htmx.process(controlDiv)
 
@@ -1153,7 +1153,7 @@ handleMapMoveEnd(e){
   
       
 }`,
-		Call:       templ.SafeScript(`__templ_mapActor_9963`),
-		CallInline: templ.SafeScriptInline(`__templ_mapActor_9963`),
+		Call:       templ.SafeScript(`__templ_mapActor_bd2f`),
+		CallInline: templ.SafeScriptInline(`__templ_mapActor_bd2f`),
 	}
 }

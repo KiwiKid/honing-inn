@@ -22,6 +22,8 @@ type Home struct {
 	PointType       string    `gorm:"default:null"`
 	Title           string    `gorm:"default:null"`
 	Url             string    `gorm:"default:null"`
+	CleanAddress    string    `gorm:"default:null"`
+	CleanSuburb     string    `gorm:"default:null"`
 	ImageUrl        string    `gorm:"default:null"`
 	Notes           string    `gorm:"default:null" form:"notes"`
 	RemoveRequestAt time.Time `gorm:"default:null"`
@@ -104,16 +106,18 @@ type ImageOverlay struct {
 }
 
 type ChatType struct {
-	ID      uint   `gorm:"primaryKey"`
-	Name    string `json:"name"`
-	Prompt  string `json:"prompt"`
-	ThemeID uint   `json:"theme_id"`
+	ID          uint   `gorm:"primaryKey"`
+	Name        string `json:"name"`
+	Prompt      string `json:"prompt"`
+	ThemeID     uint   `json:"theme_id"`
+	AddressType string `json:"address_type"`
 }
 
 type Chat struct {
 	ID            uint         `gorm:"primaryKey"`
 	ThemeID       uint         `json:"theme_id"`
 	HomeID        uint         `json:"home_id"`
+	Rating        int          `json:"rating"`
 	ChatType      uint         `json:"chat_type"`
 	ChatTypeTitle string       `json:"chat_type_title"`
 	Prompt        string       `json:"prompt"`

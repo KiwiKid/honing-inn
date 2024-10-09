@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
@@ -31,6 +30,28 @@ type OpenAIResponse struct {
 		Index        int    `json:"index"`
 		FinishReason string `json:"finish_reason"`
 	} `json:"choices"`
+}
+
+func callAndSavePerplexityAPI(db *gorm.DB, home Home, chatType ChatType) (*Chat, error) {
+
+	config := buildPromptConfig(home, chatType)
+
+	response, err := callPerplexityAPI(config)
+	if err != nil {
+		return nil, err
+	}
+
+	if response.ErrorMessage != "" {
+		return nil, fmt.Errorf("Perplexity API returned error: %v", response.ErrorMessage)
+	}
+
+	newChat := buildChat(response, home, chatType)
+
+	if err := db.Create(&newChat).Error; err != nil {
+		return nil, fmt.Errorf("Failed to save chat %v", err)
+	}
+
+	return &newChat, nil
 }
 
 func chatHandler(db *gorm.DB) http.HandlerFunc {
@@ -100,9 +121,10 @@ func chatHandler(db *gorm.DB) http.HandlerFunc {
 
 			homeID := r.FormValue("HomeID")
 			chatTypeID := r.FormValue("chatTypeID")
+			all := r.FormValue("All") == "true"
 			themeID := r.FormValue("ThemeID")
 
-			if homeID == "" || chatTypeID == "" || themeID == "" {
+			if homeID == "" || (chatTypeID == "" && !all) || themeID == "" {
 				http.Error(w, "Missing required form values", http.StatusBadRequest)
 				return
 			}
@@ -112,20 +134,10 @@ func chatHandler(db *gorm.DB) http.HandlerFunc {
 				http.Error(w, "Invalid HomeID", http.StatusBadRequest)
 				return
 			}
-			chatTypeIDUint, err := strconv.ParseUint(chatTypeID, 10, 32)
-			if err != nil {
-				http.Error(w, "Invalid chatTypeID", http.StatusBadRequest)
-				return
-			}
+
 			themeIDUint, err := strconv.ParseUint(themeID, 10, 32)
 			if err != nil {
 				http.Error(w, "Invalid ThemeID", http.StatusBadRequest)
-				return
-			}
-
-			chatType, err := GetChatType(db, uint(chatTypeIDUint))
-			if err != nil {
-				http.Error(w, "Failed to get chat type", http.StatusInternalServerError)
 				return
 			}
 
@@ -145,53 +157,53 @@ func chatHandler(db *gorm.DB) http.HandlerFunc {
 				return
 			}
 
-			// Call Perplexity API based on chatTypeID
-			replacements := getReplacements(*home)
+			if all {
 
-			config := PromptConfig{
-				Token:        os.Getenv("PERPLEXITY_API_TOKEN"),
-				Prompt:       chatType.Prompt,
-				Replacements: replacements,
+				chatTypes, err := GetChatTypes(db, uint(themeIDUint))
+				if err != nil {
+					waring := warning("Failed to get chat types for all processing")
+					waring.Render(GetContext(r), w)
+					return
+				}
+
+				newChats := make([]Chat, 0)
+				for _, chatType := range chatTypes {
+
+					newChat, err := callAndSavePerplexityAPI(db, *home, chatType)
+					if err != nil {
+						warning := warning(fmt.Sprintf("Failed to call Perplexity API: %v", err))
+						warning.Render(GetContext(r), w)
+						return
+					}
+
+					newChats = append(newChats, *newChat)
+
+				}
+				ratingListView := chatRatingListView(newChats)
+				ratingListView.Render(GetContext(r), w)
+				return
 			}
 
-			response, err := callPerplexityAPI(config)
+			chatTypeIDUint, err := strconv.ParseUint(chatTypeID, 10, 32)
+			if err != nil {
+				http.Error(w, "Invalid chatTypeID", http.StatusBadRequest)
+				return
+			}
+
+			chatType, err := GetChatType(db, uint(chatTypeIDUint))
+			if err != nil {
+				http.Error(w, "Failed to get chat type", http.StatusInternalServerError)
+				return
+			}
+
+			newChat, err := callAndSavePerplexityAPI(db, *home, *chatType)
 			if err != nil {
 				warning := warning(fmt.Sprintf("Failed to call Perplexity API: %v", err))
 				warning.Render(GetContext(r), w)
 				return
 			}
 
-			if response.ErrorMessage != "" {
-				warning := warning(fmt.Sprintf("Perplexity API returned error: %v", response.ErrorMessage))
-				warning.Render(GetContext(r), w)
-				return
-			}
-
-			var chatResults []ChatResult
-			for _, cr := range response.SuccessResults.Choices {
-				chatResults = append(chatResults, ChatResult{
-					Result: cr.Message.Content,
-					Role:   cr.Message.Role,
-				})
-			}
-
-			// Process the chat submission (this is an example, modify as per your logic)
-			newChat := Chat{
-				HomeID:   uint(homeIDUint),
-				ChatType: uint(chatTypeIDUint),
-				ThemeID:  uint(themeIDUint),
-				Results:  chatResults,
-				Prompt:   response.SuccessResults.prompt,
-			}
-
-			// Save chat to the database (optional)
-			if err := db.Create(&newChat).Error; err != nil {
-				warning := warning(fmt.Sprintf("Failed to save chat %v", err))
-				warning.Render(GetContext(r), w)
-				return
-			}
-
-			chatRes := chat(newChat)
+			chatRes := chat(*newChat)
 			chatRes.Render(GetContext(r), w)
 			return
 		case http.MethodDelete:

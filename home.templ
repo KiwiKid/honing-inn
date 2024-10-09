@@ -31,6 +31,14 @@ templ point(home Home){
             <span style="font-weight: 600; width: 96px;">Url:</span>
             <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{ home.Url }</span>
         </div>
+        <div style="display: flex; margin-bottom: 2px;">
+            <span style="font-weight: 600; width: 96px;">CleanAddress:</span>
+            <span>{ home.CleanAddress }</span>
+        </div>
+        <div style="display: flex; margin-bottom: 2px;">
+            <span style="font-weight: 600; width: 96px;">Suburb:</span>
+            <span>{ home.CleanSuburb }</span>
+        </div>
         if len(home.ImageUrl) > 0 {
             <div style="display: flex; margin-bottom: 2px;">
                 <img width="280px" src={ home.ImageUrl }/>
@@ -60,7 +68,9 @@ templ homeView(home Home, msg string, pointMeta PointMeta, ratings []HomeFactorA
          if len(msg) > 0 {
             <div class="text-red-500">{ msg }</div>
         }
-    
+
+        <div>Address: {home.CleanAddress}</div>
+        <div>Suburb: {home.CleanSuburb}</div>
         <div style="font-size: 2rem">
             <a  href={ templ.SafeURL(home.Url) }>{home.Title}</a>
         </div>
@@ -71,14 +81,15 @@ templ homeView(home Home, msg string, pointMeta PointMeta, ratings []HomeFactorA
         </div>
         }
 
-        <div>
-            <div class="text-gray-900">{ home.Notes }</div>
-        </div>
+     
 
         <div style="float: right">
             <button hx-get={ fmt.Sprintf("/homes/%d?viewMode=edit", home.ID) } class="btn-edit">Edit</button>
         </div>
         @ratingListView(ratings)
+        <div>
+            <div class="text-gray-900">{ home.Notes }</div>
+        </div>
     </div>
 }
 
@@ -125,10 +136,16 @@ templ populatedMetaFields(meta *SiteMeta){
             <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
             <input  type="text" name="title" id="title" value={ meta.Title } class="form-input mt-1 block w-full">
         </div>
+         <div id="address-box" hx-swap-oob="true" hx-swap="outerHTML">
+            <label for="notes" class="block text-sm font-medium text-gray-700">Address</label>
+            <input  type="text" name="notes" id="notes" value={ meta.Address } class="form-input mt-1 block w-full">
+        </div>
         <div id="notes-box" hx-swap-oob="true" hx-swap="outerHTML">
             <label for="notes" class="block text-sm font-medium text-gray-700">Notes</label>
             <input  type="text" name="notes" id="notes" value={ meta.Description } class="form-input mt-1 block w-full">
         </div>
+        
+        <div id="loading-bar" class="loading-bar" hx-swap-oob="true" hx-swap="outerHTML"></div>
         @imageInput(meta.MetaImage, true)
     }else{
         { fmt.Sprintf("%+v", meta) }
@@ -194,7 +211,7 @@ templ homeEditForm(home Home, msg string, pointMeta PointMeta, ratings []HomeFac
         <input type="hidden" name="lng" value={ fmt.Sprintf("%v", home.Lng) }>
 
 
-        @urlInput(home.Url, home.Title, false)
+                @urlInput(home.Url, home.Title, false)
 
 
                 <!-- Labeled input fields -->
@@ -202,7 +219,17 @@ templ homeEditForm(home Home, msg string, pointMeta PointMeta, ratings []HomeFac
                     <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
                     <input  type="text" name="title" id="title" value={ home.Title } class="form-input mt-1 block w-full">
                 </div>
-
+                <div id="address-box" style="display: flex; margin-bottom: 2px;">
+                    <label for="title" class="block text-sm font-medium text-gray-700">Address</label>
+                     <input  type="text" name="cleanAddress" id="cleanAddress" value={  home.CleanAddress } class="form-input mt-1 block w-full">
+                    @ai()
+                </div>
+                <div style="display: flex; margin-bottom: 2px;">
+                    <label for="title" class="block text-sm font-medium text-gray-700">Suburb</label>
+                    <input type="text" name="cleanSuburb" id="cleanSuburb" value={  home.CleanSuburb } class="form-input mt-1 block w-full">
+                    @ai()
+                </div>
+                
 
                 <div id="notes-box">
                     <label for="notes" class="block text-sm font-medium text-gray-700">Notes</label>

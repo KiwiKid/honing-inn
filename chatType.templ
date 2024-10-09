@@ -8,15 +8,16 @@ import (
 templ chatTypeList(chatTypes []ChatType, chatMeta ChatMeta){
     <div class="space-y-4">
         <h2 class="text-lg font-semibold">Chat Types</h2>
+        @addChatType(true, 1)
         <div class="space-y-2">
+            
             for _, ct := range chatTypes {
                 <div class="bg-gray-100 p-4 rounded shadow-sm text-sm">{ fmt.Sprintf("%+v", ct)}</div>
                 @editChatType(chatMeta.ThemeID, ct)
             }
+            
         </div>
-        <div class="mt-4">
-            @addChatType(false, chatMeta.ThemeID)
-        </div>
+        <a href="/mapmanager" target="_">manage</a>
     </div>
 }
 

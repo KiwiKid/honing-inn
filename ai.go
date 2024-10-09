@@ -8,6 +8,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -68,6 +71,7 @@ type Usage struct {
 
 type PerplexitySuccessResponse struct {
 	Choices []Choice
+	Rating  int
 	prompt  string
 }
 
@@ -86,16 +90,63 @@ func cleanAddress(address string) string {
 	return address
 }
 
-func getReplacements(home Home) map[string]string {
+func getReplacements(home Home, addressType string) map[string]string {
 	return map[string]string{
-		"{address}": cleanAddress(home.Title),
+		"{address}": home.CleanAddress,
+		"{suburb}":  home.CleanSuburb,
 	}
 }
 
+func extractRating(message string) int {
+	// Define a regular expression to match "Rating:" followed by a number
+	re := regexp.MustCompile(`Rating:\s*(\d+)`)
+
+	// Find the rating in the message
+	matches := re.FindStringSubmatch(message)
+	if len(matches) > 1 {
+		// matches[1] contains the captured number
+		ratingStr := strings.TrimSpace(matches[1])
+		rating, err := strconv.Atoi(ratingStr)
+		if err != nil {
+			log.Printf("Failed to convert rating to integer: %v", err)
+			return -1
+		}
+		return rating
+	}
+
+	// Return -1 if no rating is found
+	return -1
+}
+
+func buildPromptConfig(home Home, chatType ChatType) PromptConfig {
+	// Call Perplexity API based on chatTypeID
+	replacements := getReplacements(home, chatType.AddressType)
+
+	return PromptConfig{
+		Token: os.Getenv("PERPLEXITY_API_TOKEN"),
+		StartSystemPrompt: `You are speaking to a expert assistant in home buying decisions and real estate. Be concise and truthfully answer questions in the context of purchasing a home. Always finish your answers Give the address a relative rating (1-5) compared to other addresses in the city like this: 
+
+	This property is located in a relatively quiet area. However, it is situated near major roads like Riccarton Road and Blenheim Road, which are significant thoroughfares in the city. These roads can generate some traffic noise and activity at peak hours.
+
+	Given the proximity to these roads, I would rate the traffic noise and activity around this property is relatively high but the area is generally residential and not directly adjacent to high-traffic zones like highways or major commercial centers.
+
+	For a more precise assessment, it's important to note that Riccarton Road and Blenheim Road are local roads with moderate traffic levels, especially during peak hours. However, they do not compare to the high-traffic volumes found on major highways or central business districts in Christchurch. The overall environment around 7 Middleton Road is relatively peaceful and suitable for residential living.
+	
+	Rating: 4
+	`,
+		UserPrompt:       chatType.Prompt,
+		Replacements:     replacements,
+		ExistingMessages: []Message{},
+	}
+
+}
+
 type PromptConfig struct {
-	Token        string
-	Prompt       string
-	Replacements map[string]string
+	Token             string
+	StartSystemPrompt string
+	UserPrompt        string
+	Replacements      map[string]string
+	ExistingMessages  []Message
 }
 
 func callPerplexityAPI(config PromptConfig) (PerplexityResult, error) {
@@ -106,30 +157,41 @@ func callPerplexityAPI(config PromptConfig) (PerplexityResult, error) {
 	}
 
 	runSettings := RunSettings{
-		MaxTokens: 512, //512,
+		MaxTokens: 512,
 	}
 
-	var prompt string = config.Prompt
+	var prompt string = config.UserPrompt
 	for key, value := range config.Replacements {
 		prompt = strings.Replace(prompt, key, value, -1)
 		log.Printf("After replacement (%s|%s): %s", key, value, prompt)
 	}
 
-	// Construct the Perplexity API request body
-	reqBody := PerplexityRequest{
-		Model: "llama-3.1-sonar-small-128k-online",
-		Messages: []Message{
-			{Role: "system", Content: "Be precise and concise."},
+	messages := []Message{}
+	if len(config.ExistingMessages) > 0 {
+		messages = append(config.ExistingMessages, Message{Role: "user", Content: prompt})
+	} else {
+		messages = []Message{
+			{Role: "system", Content: config.StartSystemPrompt},
 			{Role: "user", Content: prompt},
-		},
+		}
+	}
+
+	// Construct the Perplexity API request body
+	/*
+		llama-3.1-sonar-small-128k-online (8B parameters)
+		llama-3.1-sonar-large-128k-online (70B parameters)
+		llama-3.1-sonar-huge-128k-online (405B parameters)
+	*/
+	reqBody := PerplexityRequest{
+		Model:                  "llama-3.1-sonar-small-128k-online",
+		Messages:               messages,
 		MaxTokens:              runSettings.MaxTokens,
 		Temperature:            0.2,
 		TopP:                   0.9,
 		ReturnCitations:        true,
-		SearchDomainFilter:     []string{"perplexity.ai"},
+		SearchDomainFilter:     []string{}, // []string{"perplexity.ai"},
 		ReturnImages:           false,
-		ReturnRelatedQuestions: false,
-		SearchRecencyFilter:    "month",
+		ReturnRelatedQuestions: true,
 		TopK:                   0,
 		Stream:                 false,
 		PresencePenalty:        0,
@@ -186,15 +248,43 @@ func callPerplexityAPI(config PromptConfig) (PerplexityResult, error) {
 		return PerplexityResult{ErrorMessage: "Failed to unmarshal success response"}, err
 	}
 
+	// log.Printf("\n\n====Response: %+v\n\n", body)
+
+	rating := extractRating(successResp.Choices[0].Message.Content)
+
+	log.Printf("extractRating returned: %d", rating)
+
 	// Return the content of the assistant's message
 	if len(successResp.Choices) > 0 {
 		return PerplexityResult{
 			SuccessResults: PerplexitySuccessResponse{
 				Choices: successResp.Choices,
+				Rating:  rating,
 				prompt:  prompt,
 			},
 		}, nil
 	}
 
 	return PerplexityResult{ErrorMessage: "No choices returned in the response"}, fmt.Errorf("no choices returned")
+}
+
+func buildChat(response PerplexityResult, home Home, chatType ChatType) Chat {
+
+	var chatResults []ChatResult
+	for _, cr := range response.SuccessResults.Choices {
+		chatResults = append(chatResults, ChatResult{
+			Result: cr.Message.Content,
+			Role:   cr.Message.Role,
+		})
+	}
+
+	return Chat{
+		HomeID:        home.ID,
+		ChatTypeTitle: chatType.Name,
+		ChatType:      uint(chatType.ID),
+		ThemeID:       uint(chatType.ThemeID),
+		Results:       chatResults,
+		Rating:        response.SuccessResults.Rating,
+		Prompt:        response.SuccessResults.prompt,
+	}
 }

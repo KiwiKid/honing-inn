@@ -5,7 +5,7 @@ import (
 )
 
 templ loadChat(themeId uint, homeId uint, chatTypeId uint){
-    <div hx-get={ fmt.Sprintf("/chatlist?themeId=%d&homeId=%d&chatTypeId=%d", themeId, homeId, chatTypeId)} hx-trigger="revealed" hx-swap="outerHTML"></div>
+    <div hx-get={ fmt.Sprintf("/chatlist?themeId=%d&homeId=%d&chatTypeId=%d", themeId, homeId, chatTypeId)} hx-trigger="revealed" hx-swap="outerHTML">[loadChat]</div>
 }
 
 templ chatTypeNav(chatTypes []ChatType, chatMeta ChatMeta){
@@ -16,18 +16,18 @@ templ chatTypeNav(chatTypes []ChatType, chatMeta ChatMeta){
         for _, ct := range chatTypes {
             <button hx-get={ fmt.Sprintf("/chatlist?themeId=%d&homeId=%d&chatTypeId=%d", chatMeta.ThemeID, chatMeta.HomeID, ct.ID)}>{ct.Name}</button>
         }
-        @addChatType(false, chatMeta.ThemeID)
+                <a href="/mapmanager" target="_">manage</a>
     }
     </div>
 }
 
-templ emptyChat(chatTypes []ChatType, chatMeta ChatMeta, swapOOB bool){
+templ emptyChat(chats []Chat, chatTypes []ChatType, chatMeta ChatMeta, swapOOB bool){
     
     <div id="chat-box" 
         if swapOOB { 
             hx-swap-oob="true"
         }
-        class="">[emptyChat]
+        class="">[emptyChat { fmt.Sprintf("chats: %d", len(chats))}]
         <div>
             @chatTypeNav(chatTypes, chatMeta)
             { fmt.Sprintf("%+v", chatMeta)}
@@ -35,7 +35,15 @@ templ emptyChat(chatTypes []ChatType, chatMeta ChatMeta, swapOOB bool){
         if chatMeta.ChatTypeID > 0 {
              [[emptyChat.ChatTypeID]]
             @createChatForm(chatMeta, chatMeta.ChatTypeID)
+            
         }
+        if len(chats) > 0 {
+            @chatRatingListView(chats)
+            
+
+        }
+        @createAllChatsForm(chatMeta, chatTypes)
+        
     </div>
 }
 
@@ -45,27 +53,31 @@ templ createChatList(){
 }
 
 templ chatList(chats []Chat, chatMeta ChatMeta, chatTypeID uint){
-    <div hx-swap-oob="true" id="chat-box" style="background-color: #f3f4f6; " >
+    <div hx-swap-oob="true" id="chat-box" style="background-color: #f3f4f6; " >[chatList]
             <button hx-get={ fmt.Sprintf("/homes/%d?viewMode=view", chatMeta.HomeID) }>&lt;&lt;</button>
 
     chatList for { fmt.Sprintf("%d len:%d", chatMeta.HomeID, len(chats)) } 
         [[chatList]]
-        if len(chats) == 0 {
-            if chatMeta.ChatTypeID > 0 {
-                [[chatList.ChatTypeID]]
-                @createChatForm(chatMeta, chatTypeID)
-            }
+        if chatMeta.ChatTypeID > 0 {
+            [[chatList.ChatTypeID]]
+            @createChatForm(chatMeta, chatTypeID)
         }
+        
+
+
         for _, c := range chats {
             @chat(c)
         }
+
+
     </div>
 }
 
 templ chat(chat Chat){
     <div data-theme-id={fmt.Sprintf("%d", chat.ThemeID)} data-home-id={ fmt.Sprintf("%d", chat.HomeID)} class="max-w-2xl mx-auto p-4 space-y-4">[[chat]]
-             <details><summary>prompt</summary>ChatTypeTitle: {chat.ChatTypeTitle} { chat.Prompt }</details>
-             <button hx-delete={ fmt.Sprintf("/chat/%d", chat.ID)} >delete</button>
+        <details><summary>prompt</summary>ChatTypeTitle: {chat.ChatTypeTitle} - Rating: { fmt.Sprintf("%d", chat.Rating)} { chat.Prompt }</details>
+        <button hx-delete={ fmt.Sprintf("/chat/%d", chat.ID)} >delete</button>
+        <div>Rating: { fmt.Sprintf("%d", chat.Rating)}</div>
         for _, res := range chat.Results {
             if res.Role == "assistant" {
                 <div class="bg-gray-100 text-gray-800 p-3 rounded-lg w-fit max-w-xs">
@@ -76,13 +88,36 @@ templ chat(chat Chat){
                     <p><pre>{res.Result}</pre></p>
                 </div>
             }
-                    <div class="text-lg font-semibold text-gray-700 mb-4">
-
-        </div>
-                       
-
         }
     </div>
+}
+
+templ chatRatingListView(chats []Chat){
+    [chatRatingListView]
+    for _, c := range chats {
+        <article class="border-b">
+            <details class="group">
+                <summary class="w-full text-left p-4 bg-gray-100 hover:bg-gray-200 flex justify-between items-center cursor-pointer">
+                    <span>{ c.ChatTypeTitle }</span>
+                     if c.Rating > 0 {
+                        <div style="font-size: 14px; font-weight: 600; color: #2d3748;">{ c.ChatTypeTitle }</div>
+                        
+                        <!-- Rating (stars) on the next row -->
+                        <div style="display: flex; gap: 4px; margin-top: 4px;">
+                            for i := 0; i < c.Rating; i++ {
+                                @star()
+                            }
+                        </div>
+                    }
+                </summary>
+                <section class="p-4 bg-gray-50">
+                    for _, ch := range c.Results {
+                        <p><pre>{ch.Result}</pre></p>
+                    }
+                </section>
+            </details>
+        </article>
+    }
 }
 
 
@@ -94,6 +129,18 @@ templ createChatForm(chatMeta ChatMeta, chatTypeID uint){
             <input type="hidden" name="chatTypeID" value={ fmt.Sprintf("%d", chatTypeID) }/>
             <input type="hidden" name="ThemeID" value={ fmt.Sprintf("%d", chatMeta.ThemeID) }/>
             <button type="submit">Research</button>
+        </form>
+    </div>
+}
+
+
+templ createAllChatsForm(chatMeta ChatMeta, chatTypes []ChatType){
+    <div>[createAllChatForm]
+        <form hx-post="/chat">
+            <input type="hidden" name="HomeID" value={ fmt.Sprintf("%d", chatMeta.HomeID) }/>
+            <input type="hidden" name="All" value="true" />
+            <input type="hidden" name="ThemeID" value={ fmt.Sprintf("%d", chatMeta.ThemeID) }/>
+            <button type="submit">Research ALL</button>
         </form>
     </div>
 }

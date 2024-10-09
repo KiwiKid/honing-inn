@@ -11,6 +11,8 @@ import (
 type SiteMeta struct {
 	Url         string
 	Title       string
+	Address     string
+	Suburb      string
 	Description string
 	Keywords    string
 	MetaImage   string
@@ -79,6 +81,10 @@ func GetWebMeta(url string) (*SiteMeta, error) {
 	}
 
 	extractMetaTags(doc)
+
+	if len(sm.Title) > 0 {
+		sm.Address = cleanAddress(sm.Title)
+	}
 
 	return sm, nil
 }

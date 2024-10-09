@@ -257,10 +257,17 @@ func DeleteChatType(db *gorm.DB, id uint) (*ChatType, error) {
 
 func GetChats(db *gorm.DB, themeId uint, homeId uint, chatTypeId uint) ([]Chat, error) {
 	var chats []Chat
-	log.Printf("themeId: %v, homeId: %v, chatTypeId: %v", themeId, homeId, chatTypeId)
-	err := db.Preload("Results").Where("theme_id = ? AND home_id = ? AND chat_type = ?", themeId, homeId, chatTypeId).Find(&chats).Error
-	if err != nil {
-		return nil, err
+	log.Printf("themeId: %v, homeId: %v", themeId, homeId, chatTypeId)
+	if chatTypeId == 0 {
+		err := db.Preload("Results").Where("theme_id = ? AND home_id = ?", themeId, homeId).Find(&chats).Error
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err := db.Preload("Results").Where("theme_id = ? AND home_id = ? AND chat_type = ?", themeId, homeId, chatTypeId).Find(&chats).Error
+		if err != nil {
+			return nil, err
+		}
 	}
 	return chats, nil
 }

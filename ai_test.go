@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"strings"
 	"testing"
 )
@@ -49,6 +48,7 @@ func TestCleanAddress(t *testing.T) {
 	}
 }
 
+/*
 func TestCallPerplexityAPI(t *testing.T) {
 	// Sample prompt and token (replace with a valid token)
 	prompt := "Tell me about Go programming."
@@ -60,9 +60,10 @@ func TestCallPerplexityAPI(t *testing.T) {
 	}
 
 	config := PromptConfig{
-		Token:        token,
-		Prompt:       prompt,
-		Replacements: replacements,
+		Token:             token,
+		UserPrompt:        prompt,
+		StartSystemPrompt: "You are speaking to a expert assistant in home buying decisions and real eastate. Present truthfully and accurately answer questions in the context of purchasing a home.",
+		Replacements:      replacements,
 	}
 
 	// Call the API
@@ -85,8 +86,81 @@ func TestCallPerplexityAPI(t *testing.T) {
 		t.Errorf("Expected result to contain '%s', but got: %s", expectedSubstring, result.SuccessResults.Choices[0].Message.Content)
 	}
 }
-
+*/
 // Helper function to check if a string contains a substring
 func contains(s, substr string) bool {
 	return strings.Contains(s, substr)
+}
+
+func TestExtractRating(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		message string
+		want    int
+	}{
+		{
+			name:    "Valid rating in message",
+			message: "User's feedback. Rating: 5",
+			want:    5,
+		},
+		{
+			name:    "Valid rating with large number",
+			message: "User's feedback. Rating: 123",
+			want:    123,
+		},
+		{
+			name:    "Invalid rating (non-numeric)",
+			message: "User's feedback. Rating: five",
+			want:    -1,
+		},
+		{
+			name:    "No rating in message",
+			message: "User's feedback.",
+			want:    -1,
+		},
+		{
+			name:    "Rating keyword present, no number",
+			message: "User's feedback. Rating:",
+			want:    -1,
+		},
+		{
+			name: "Rating at the end of message",
+			message: `User liked the product.
+			**Rating: 8**`,
+			want: 8,
+		},
+		{
+			name:    "Multiple Ratings, takes first",
+			message: "Rating: 5 and Rating: 10",
+			want:    5,
+		},
+		{
+			name:    "Rating with whitespace",
+			message: "Rating:    9",
+			want:    9,
+		},
+		{
+			name:    "Negative rating",
+			message: "Rating: -2",
+			want:    -1,
+		},
+		{
+			name:    "No space after 'Rating:'",
+			message: "Rating:10",
+			want:    10,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := extractRating(tt.message)
+			if got != tt.want {
+				t.Errorf("extractRating(%q) = %d, want %d", tt.message, got, tt.want)
+			}
+		})
+	}
 }

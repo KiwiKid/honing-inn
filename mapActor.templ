@@ -51,7 +51,7 @@ class mapActor {
 
       this.editPointPopupOptions = {
         color: 'blue',
-        minWidth: '300'
+        minWidth: '500'
       }
 
       this.actions = {
@@ -626,7 +626,7 @@ handleMapMoveEnd(e){
         controlDiv.style.height = '800px';
         L.DomEvent.on(controlDiv, 'mousewheel', L.DomEvent.stopPropagation);
         //controlDiv.innerHTML = `<div hx-get="/chatlist?themeId=1" hx-trigger="every 1s" style="height: 800px; width: 800px;" hx-swap="outerHTML">loading chatlist..</div>`
-        controlDiv.innerHTML = `<div hx-swap="outerHTML"><div id="chat-box">(select a home to get started)</div></div>`
+        controlDiv.innerHTML = `<div hx-swap="outerHTML"><div id="chat-box">(select a home to get started)         <a href="/mapmanager" target="_">manage</a></div></div>`
 
         htmx.process(controlDiv)
 

@@ -410,6 +410,14 @@ func chatListHandler(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Print("chatListHandler START \n\n")
 		switch r.Method {
+		case "POST":
+			if err := r.ParseForm(); err != nil {
+				warning := warning("chatListHandler - Unable to parse form data")
+				warning.Render(GetContext(r), w)
+			}
+
+			
+
 		case "GET":
 
 			selectedChatIdStr := r.URL.Query().Get("selectedChatId")
@@ -436,7 +444,8 @@ func chatListHandler(db *gorm.DB) http.HandlerFunc {
 
 			homeIdStr := r.URL.Query().Get("homeId")
 			if homeIdStr == "" {
-				chat := emptyChat(chatTypes, ChatMeta{
+				log.Printf("!!EMPTY CHATS 1 !!")
+				chat := emptyChat([]Chat{}, chatTypes, ChatMeta{
 					SelectedChatID: uint(selectedChatId),
 					ThemeID:        themeId,
 					HomeID:         0,
@@ -458,12 +467,11 @@ func chatListHandler(db *gorm.DB) http.HandlerFunc {
 				SelectedChatID: uint(selectedChatId),
 			}
 
-			var chats []Chat
-			var chatTypeId int
+			var chatTypeId uint64
 			chatTypeIDStr := r.URL.Query().Get("chatTypeId")
 			if chatTypeIDStr != "" {
-				log.Printf("CHAT TYPE ID PROVIDED %s", chatTypeIDStr)
-				chatTypeId, err = strconv.Atoi(chatTypeIDStr)
+				log.Printf("chatListHandler - CHAT TYPE ID PROVIDED %s", chatTypeIDStr)
+				chatTypeId, err = strconv.ParseUint(chatTypeIDStr, 10, 32)
 				if err != nil {
 					warning := warning("Invalid chatTypeId ID")
 					warning.Render(GetContext(r), w)
@@ -472,13 +480,16 @@ func chatListHandler(db *gorm.DB) http.HandlerFunc {
 
 				meta.ChatTypeID = uint(chatTypeId)
 
-				chats, err = GetChats(db, themeId, uint(homeId), uint(chatTypeId))
-				if err != nil {
-					warning := warning(fmt.Sprintf("Failed to get chats - %s", err))
-					warning.Render(GetContext(r), w)
-					return
-				}
+			} else {
+				log.Printf("chatListHandler - CHAT TYPE ID NOT PROVIDED %s", chatTypeIDStr)
 
+				chatTypeId = 0
+			}
+			chats, err := GetChats(db, themeId, uint(homeId), uint(chatTypeId))
+			if err != nil {
+				warning := warning(fmt.Sprintf("Failed to get chats - %s", err))
+				warning.Render(GetContext(r), w)
+				return
 			}
 
 			/*(if len(chats) == 0 {
@@ -496,7 +507,7 @@ func chatListHandler(db *gorm.DB) http.HandlerFunc {
 				return
 			}*/
 
-			log.Printf("chatListHandler - chats %v\n\n meta %+v chatTypeId %d ", chats, meta, chatTypeId)
+			//log.Printf("chatListHandler - chats %v\n\n meta %+v chatTypeId %d ", chats, meta, chatTypeId)
 			chatList := chatList(chats, meta, uint(chatTypeId))
 			chatList.Render(GetContext(r), w)
 			return
@@ -1138,7 +1149,7 @@ func singleHomeHandler(db *gorm.DB) http.HandlerFunc {
 						return
 					}
 				} else {
-					log.Printf("CHAT TYPE ID NOT PROVIDED")
+					log.Printf("CHAT TYPE ID NOT PROVIDED (%d existing chats)", len(chats))
 
 					chatTypes, err := GetChatTypes(db, uint(themeId))
 					if err != nil {
@@ -1148,8 +1159,9 @@ func singleHomeHandler(db *gorm.DB) http.HandlerFunc {
 					}
 
 					chatTypeId = 0
+					log.Printf("!!EMPTY CHATS 2 !!")
 
-					ec := emptyChat(chatTypes, meta, true)
+					ec := emptyChat(chats, chatTypes, meta, true)
 					ec.Render(GetContext(r), w)
 					return
 				}
@@ -1302,15 +1314,24 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 				return
 			}
 
+			cAddress := r.FormValue("cleanAddress")
+			if len(cAddress) == 0 && len(title) > 0 {
+				cAddress = cleanAddress(title)
+			}
+
+			cSuburb := r.FormValue("cleanSuburb")
+
 			// Create a Home object with form data
 			home := Home{
-				Lat:       lat,
-				Lng:       lng,
-				PointType: pointType,
-				Title:     title,
-				Notes:     notes,
-				Url:       url,
-				ImageUrl:  imageUrl,
+				Lat:          lat,
+				Lng:          lng,
+				PointType:    pointType,
+				Title:        title,
+				CleanAddress: cAddress,
+				CleanSuburb:  cSuburb,
+				Notes:        notes,
+				Url:          url,
+				ImageUrl:     imageUrl,
 			}
 
 			removeRequestAt := r.FormValue("removeRequestAt")
