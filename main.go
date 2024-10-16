@@ -148,7 +148,7 @@ func main() {
 
 	r.Get("/homes", homeHandler(db))
 	r.Post("/homes", homeHandler(db))
-	r.Post("/homes/url", homeUrlHandler(db)) // Assuming POST for creating a home
+	r.Post("/homes/url", homeUrlHandler(db))
 
 	r.Get("/", mapHandler(db))
 	r.Get("/controls", mapControlsHandler(db))
@@ -170,6 +170,7 @@ func main() {
 
 	r.Get("/chattype", chatTypeHandler(db))
 	r.Post("/chattype", chatTypeHandler(db))
+	r.Delete("/chattype/{chatTypeId:[0-9]+}", chatTypeHandler(db))
 
 	port := os.Getenv("PORT")
 	if len(port) == 0 {
@@ -402,6 +403,38 @@ func chatTypeHandler(db *gorm.DB) http.HandlerFunc {
 			success := success(fmt.Sprintf("Updated chat type - %s", chat.Name))
 			success.Render(GetContext(r), w)
 			return
+
+		case http.MethodDelete:
+			// Delete chat
+			chatTypeIdStr := chi.URLParam(r, "chatTypeId")
+			if chatTypeIdStr == "" {
+				warning := warning("chatTypeId ID not provided")
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			id, err := strconv.Atoi(chatTypeIdStr)
+			if err != nil {
+				warning := warning("Invalid chatId ID")
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			chat, dErr := DeleteChatType(db, uint(id))
+			if dErr != nil {
+				warning := warning("Failed to delete factor")
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			reload := success(fmt.Sprintf("Deleted chat type %s", chat.Name))
+			reload.Render(GetContext(r), w)
+			return
+		default:
+			warning := warning("Method not allowed")
+			warning.Render(GetContext(r), w)
+			return
+
 		}
 	}
 }
@@ -415,8 +448,6 @@ func chatListHandler(db *gorm.DB) http.HandlerFunc {
 				warning := warning("chatListHandler - Unable to parse form data")
 				warning.Render(GetContext(r), w)
 			}
-
-			
 
 		case "GET":
 
@@ -1432,7 +1463,7 @@ func homeUrlHandler(db *gorm.DB) http.HandlerFunc {
 
 			metaTags, err := GetWebMeta(url)
 			if err != nil {
-				warn := warning(fmt.Sprintf("Unable to get web meta %v", err))
+				warn := warningWithDetail("Could not get web meta - enter address and suburb manually", fmt.Sprintf("Failed to getWebMeta", err))
 				warn.Render(GetContext(r), w)
 				return
 			}

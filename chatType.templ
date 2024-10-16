@@ -65,7 +65,10 @@ templ editChatType(themeId uint, chatType ChatType){
             <form hx-post="/chattype" class="space-y-4">
                 <input type="hidden" name="themeId" value={fmt.Sprintf("%d", themeId)} />
                 <input type="hidden" name="chatTypeID" value={fmt.Sprintf("%d", chatType.ID)} />
-                
+                <button hx-delete={ fmt.Sprintf("/chattype/%d", chatType.ID) }
+                            class="w-full bg-green-500 text-white py-2 px-4 rounded shadow hover:bg-green-600">
+                        Delete "{ chatType.Name }" Type
+                    </button>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Name</label>
                     <input type="text" name="name" value={chatType.Name}

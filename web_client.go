@@ -22,6 +22,7 @@ func GetWebMeta(url string) (*SiteMeta, error) {
 	// Make the GET request
 	resp, err := http.Get(url)
 	if err != nil {
+		log.Printf("GetWebMeta - Failed to fetch URL: %v", err)
 		return nil, fmt.Errorf("error fetching URL: %v", err)
 	}
 	defer resp.Body.Close()
@@ -29,6 +30,7 @@ func GetWebMeta(url string) (*SiteMeta, error) {
 	// Parse the HTML
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
+		log.Printf("GetWebMeta - Failed to parse URL: %v", err)
 		return nil, fmt.Errorf("error parsing HTML: %v", err)
 	}
 

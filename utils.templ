@@ -5,7 +5,11 @@ import (
 )
 
 templ warning(msg string){
-    <div>{msg}</div>
+    <div class="p-4 bg-red-50 text-red-800">{msg}</div>
+}
+
+templ warningWithDetail(msg string, details string){
+    <div class="p-4">{msg} <details><summary>details</summary>{details}</details></div>
 }
 
 templ success(msg string){
