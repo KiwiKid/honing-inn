@@ -127,11 +127,12 @@ templ homeForm(pointMeta PointMeta, lat string, lng string, msg string){
 
 }
 
+
 templ populatedMetaFields(meta *SiteMeta){
     if meta != nil {
         
        @tick("got meta data")
-        @urlInput(meta.Url, meta.Title, true)
+        @urlInput(meta.Url, meta.Title, false, "")
         <div id="title-box" hx-swap-oob="true" hx-swap="outerHTML">
             <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
             <input  type="text" name="title" id="title" value={ meta.Title } class="form-input mt-1 block w-full">
@@ -153,21 +154,28 @@ templ populatedMetaFields(meta *SiteMeta){
 
 }
 
-templ urlInput(url string, title string, oob bool){
+templ urlInput(url string, title string, oob bool, failedMsg string){
+    if len(failedMsg) > 0 {
+        @imageInput("", true)
+    }
     <div id="url-box" style="padding-bottom: 10px"
     if oob {
         hx-swap-oob="true"
     }
     >
+
+        if len(failedMsg) > 0 {
+            @warning(failedMsg)
+        } else if len(title) == 0 {
+            @pending()
+        } else {
+            @tick(fmt.Sprintf("got title - %s", urlInput))
+        } 
         
             <label for="url" class="block text-sm font-medium text-gray-700">
-                if len(title) == 0 {
-                    @pending()
-                } else {
-                    @tick("got title")
-                }
-            URL
-                
+                    
+                URL
+                    
             <input 
             if len(title) == 0 {
                     hx-post="/homes/url"
@@ -211,7 +219,7 @@ templ homeEditForm(home Home, msg string, pointMeta PointMeta, ratings []HomeFac
         <input type="hidden" name="lng" value={ fmt.Sprintf("%v", home.Lng) }>
 
 
-                @urlInput(home.Url, home.Title, false)
+                @urlInput(home.Url, home.Title, false, "")
 
 
                 <!-- Labeled input fields -->

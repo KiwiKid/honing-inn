@@ -1456,15 +1456,19 @@ func homeUrlHandler(db *gorm.DB) http.HandlerFunc {
 			url := r.FormValue("url")
 
 			if len(url) == 0 {
-				urlIn := urlInput("", "", false)
+				urlIn := urlInput("", "", false, "(no URL provided)")
 				urlIn.Render(GetContext(r), w)
 				return
 			}
 
+			log.Print("homeUrlHandler homeUrlHandler URL: " + url)
+
 			metaTags, err := GetWebMeta(url)
 			if err != nil {
-				warn := warningWithDetail("Could not get web meta - enter address and suburb manually", fmt.Sprintf("Failed to getWebMeta", err))
-				warn.Render(GetContext(r), w)
+				msg := fmt.Sprintf("Failed to get Info (enter address below) %v", err)
+				urlfield := urlInput(url, "", false, msg)
+				//warn := warningWithDetail("Could not get web meta - enter address and suburb manually", msg)
+				urlfield.Render(GetContext(r), w)
 				return
 			}
 
