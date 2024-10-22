@@ -16,7 +16,7 @@ func DBInit(config EnvConfig) (*gorm.DB, error) {
 	}
 
 	// Migrate the schema
-	err = db.AutoMigrate(&Factor{}, &Home{}, &HomeFactorRating{}, &Shape{}, &ShapeType{}, &ShapeKind{}, &ImageOverlay{}, &ChatType{}, &Chat{}, &ChatResult{})
+	err = db.AutoMigrate(&Factor{}, &Home{}, &HomeFactorRating{}, &Shape{}, &ShapeType{}, &ShapeKind{}, &ImageOverlay{}, &ChatType{}, &Chat{}, &ChatResult{}, &Theme{})
 	if err != nil {
 		log.Fatal("failed to migrate database:", err)
 	}
@@ -148,6 +148,45 @@ func GetFactors(db *gorm.DB) []Factor {
 		factors = []Factor{}
 	}
 	return factors
+}
+
+func GetActiveTheme(db *gorm.DB, themeIdOverride uint) Theme {
+	if themeIdOverride == 0 {
+		var theme Theme
+		err := db.First(&theme)
+		if err.Error != nil {
+			log.Printf("failed to get active theme: %v", err.Error)
+			return Theme{}
+		}
+		return theme
+	} else {
+		var theme Theme
+		err := db.First(&theme, themeIdOverride)
+		if err.Error != nil {
+			log.Printf("failed to get active theme: %v", err.Error)
+			return Theme{}
+		}
+		return theme
+	}
+}
+
+func SaveTheme(db *gorm.DB, theme Theme) (*Theme, error) {
+	err := db.Save(&theme)
+	if err.Error != nil {
+		log.Printf("failed to save theme: %v", err.Error)
+		return nil, err.Error
+	}
+	return &theme, nil
+}
+
+func GetThemes(db *gorm.DB) []Theme {
+	var themes []Theme
+	err := db.Find(&themes)
+	if err.Error != nil {
+		log.Printf("failed to get themes: %v", err.Error)
+		themes = []Theme{}
+	}
+	return themes
 }
 
 func DeleteFactor(db *gorm.DB, id uint) (Factor, error) {

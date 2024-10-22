@@ -34,14 +34,14 @@ templ addChatType(isOpen bool, themeId uint){
                     <input type="hidden" name="themeId" value={fmt.Sprintf("%d", themeId)} />
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Name</label>
+                        <label class="block text-sm font-medium text-gray-700 form-label">Name</label>
                         <input type="text" name="name" 
                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
                                placeholder="Enter chat type name" />
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Prompt</label>
+                        <label class="block text-sm font-medium text-gray-700 form-label">Prompt</label>
                         <textarea rows="10" cols="100" type="text" name="prompt" 
                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
                                placeholder="Enter prompt"></textarea>
@@ -70,14 +70,14 @@ templ editChatType(themeId uint, chatType ChatType){
                         Delete "{ chatType.Name }" Type
                     </button>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Name</label>
+                    <label class="block text-sm font-medium text-gray-700 form-label">Name</label>
                     <input type="text" name="name" value={chatType.Name}
                             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
                             placeholder="Enter chat type name" />
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Prompt</label>
+                    <label class="block text-sm font-medium text-gray-700 form-label">Prompt</label>
                     <textarea rows="10" cols="100" type="text" name="prompt"
                             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
                             placeholder="Enter prompt" > {chatType.Prompt} </textarea>

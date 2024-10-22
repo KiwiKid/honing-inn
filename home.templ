@@ -105,7 +105,7 @@ templ homeForm(pointMeta PointMeta, lat string, lng string, msg string){
 
     <!-- Select dropdown -->
     <div>
-        <label for="pointType" class="block text-sm font-medium text-gray-700">Point Type</label>
+        <label for="pointType" class="block text-sm font-medium text-gray-700 form-label">Point Type</label>
         <select name="pointType" id="pointType" class="form-input mt-1 block w-full">
             for _, h := range pointMeta.types {
                 <option value={ h.Name }>{ h.Name }</option>
@@ -134,15 +134,15 @@ templ populatedMetaFields(meta *SiteMeta){
        @tick("got meta data")
         @urlInput(meta.Url, meta.Title, false, "")
         <div id="title-box" hx-swap-oob="true" hx-swap="outerHTML">
-            <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
+            <label for="title" class="block text-sm font-medium text-gray-700 form-label">Title</label>
             <input  type="text" name="title" id="title" value={ meta.Title } class="form-input mt-1 block w-full">
         </div>
          <div id="address-box" hx-swap-oob="true" hx-swap="outerHTML">
-            <label for="notes" class="block text-sm font-medium text-gray-700">Address</label>
+            <label for="notes" class="block text-sm font-medium text-gray-700 form-label">Address</label>
             <input  type="text" name="notes" id="notes" value={ meta.Address } class="form-input mt-1 block w-full">
         </div>
         <div id="notes-box" hx-swap-oob="true" hx-swap="outerHTML">
-            <label for="notes" class="block text-sm font-medium text-gray-700">Notes</label>
+            <label for="notes" class="block text-sm font-medium text-gray-700 form-label">Notes</label>
             <input  type="text" name="notes" id="notes" value={ meta.Description } class="form-input mt-1 block w-full">
         </div>
         
@@ -158,6 +158,7 @@ templ urlInput(url string, title string, oob bool, failedMsg string){
     if len(failedMsg) > 0 {
         @imageInput("", true)
     }
+    
     <div id="url-box" style="padding-bottom: 10px"
     if oob {
         hx-swap-oob="true"
@@ -172,7 +173,7 @@ templ urlInput(url string, title string, oob bool, failedMsg string){
             @tick(fmt.Sprintf("got title - %s", urlInput))
         } 
         
-            <label for="url" class="block text-sm font-medium text-gray-700">
+            <label for="url" class="block text-sm font-medium text-gray-700 form-label">
                     
                 URL
                     
@@ -183,7 +184,7 @@ templ urlInput(url string, title string, oob bool, failedMsg string){
                     hx-target="#url-box"
                     hx-swap="outerHTML"
             }
-               type="text" name="url" id="url" value={ url } class="form-input mt-1 block w-full">
+               type="text" name="url" id="url" value={ url } class="input-box form-input mt-1 block w-full">
             </label>
         </div>
 }
@@ -194,7 +195,7 @@ templ imageInput(url string, oob bool){
             hx-swap-oob="true"
         }
     >
-        <label for="imageUrl" class="block text-sm font-medium text-gray-700">Image</label>
+        <label for="imageUrl" class="block text-sm font-medium text-gray-700 form-label">Image</label>
         <input type="text" name="imageUrl" id="imageUrl" value={ url} class="form-input mt-1 block w-full">
         <img width="280px" 
             if len(url) == 0 {
@@ -224,23 +225,23 @@ templ homeEditForm(home Home, msg string, pointMeta PointMeta, ratings []HomeFac
 
                 <!-- Labeled input fields -->
                 <div id="title-box">
-                    <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
+                    <label for="title" class="block text-sm font-medium text-gray-700 form-label">Title</label>
                     <input  type="text" name="title" id="title" value={ home.Title } class="form-input mt-1 block w-full">
                 </div>
                 <div id="address-box" style="display: flex; margin-bottom: 2px;">
-                    <label for="title" class="block text-sm font-medium text-gray-700">Address</label>
+                    <label for="title" class="block text-sm font-medium text-gray-700 form-label">Address</label>
                      <input  type="text" name="cleanAddress" id="cleanAddress" value={  home.CleanAddress } class="form-input mt-1 block w-full">
                     @ai()
                 </div>
                 <div style="display: flex; margin-bottom: 2px;">
-                    <label for="title" class="block text-sm font-medium text-gray-700">Suburb</label>
+                    <label for="title" class="block text-sm font-medium text-gray-700 form-label">Suburb</label>
                     <input type="text" name="cleanSuburb" id="cleanSuburb" value={  home.CleanSuburb } class="form-input mt-1 block w-full">
                     @ai()
                 </div>
                 
 
                 <div id="notes-box">
-                    <label for="notes" class="block text-sm font-medium text-gray-700">Notes</label>
+                    <label for="notes" class="block text-sm font-medium text-gray-700 form-label">Notes</label>
                     <input type="text" name="notes" id="notes" value={ home.Notes } class="form-input mt-1 block w-full">
                 </div>
 

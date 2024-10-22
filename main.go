@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image"
 	"io"
@@ -119,6 +120,9 @@ func main() {
 	r := chi.NewRouter()
 
 	r.Get("/mapmanager", mapManagerHandler(db))
+	r.Get("/set-theme", setThemeHandler(db))
+	r.Post("/set-theme/{themeId:[0-9]+}", setThemeHandler(db))
+	r.Post("/theme", themeEditHandler(db))
 
 	// Define routes with method-specific handlers
 	r.Get("/shapes", shapeHandler(db))
@@ -232,11 +236,29 @@ func mapHandler(db *gorm.DB) http.HandlerFunc {
 
 }
 
+func getThemeID(r *http.Request) (uint, error) {
+	if cookie, err := r.Cookie("themeId"); err == nil {
+		cookieInt, err := strconv.Atoi(cookie.Value)
+		if err == nil {
+			return uint(cookieInt), nil
+		} else {
+			return 0, err
+		}
+
+	}
+	return 0, errors.New("No theme cookie")
+}
+
 func mapControlsHandler(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
-			meta := GetPointMeta(db)
+			themeId, err := getThemeID(r)
+			if err != nil {
+				w.Header().Add("HX-Redirect", "/set-theme")
+			}
+
+			meta := GetPointMeta(db, themeId)
 
 			mapControls := mapControls(meta, "navigate")
 			mapControls.Render(GetContext(r), w)
@@ -251,13 +273,136 @@ func mapControlsHandler(db *gorm.DB) http.HandlerFunc {
 
 func mapManagerHandler(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		meta := GetPointMeta(db)
+		themeId, err := getThemeID(r)
+		if err != nil {
+			w.Header().Add("HX-Redirect", "/set-theme")
+		}
+		meta := GetPointMeta(db, themeId)
 
 		mapManager := mapManager(meta)
 		mapManager.Render(GetContext(r), w)
 		return
 
 	}
+}
+
+func setThemeHandler(db *gorm.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "GET":
+			{
+				allowEditing := false
+				themes := GetThemes(db)
+
+				themeId, err := getThemeID(r)
+				if err != nil {
+					tSet := setThemeContainer(themes, 0, allowEditing)
+					tSet.Render(GetContext(r), w)
+					return
+				} else {
+					tSet := setThemeContainer(themes, themeId, allowEditing)
+					tSet.Render(GetContext(r), w)
+					return
+				}
+			}
+		case "POST":
+			{
+				themeIdStr := chi.URLParam(r, "themeId")
+
+				// (ensure we're just setting a number)
+				themeId, err := strconv.Atoi(themeIdStr)
+				if err != nil {
+					warning := warning("Invalid theme ID")
+					warning.Render(GetContext(r), w)
+					return
+				}
+				cookie := &http.Cookie{
+					Name:   "themeId",
+					Value:  fmt.Sprintf("%d", themeId),
+					Path:   "/",
+					MaxAge: 60 * 60 * 24 * 365, // Store for 1 year
+				}
+				http.SetCookie(w, cookie)
+
+				w.Header().Add("HX-Redirect", "/set-theme")
+				return
+
+			}
+		}
+	}
+}
+
+func themeEditHandler(db *gorm.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "POST":
+			if err := r.ParseForm(); err != nil {
+				warning := warning("themeEditHandler - Unable to parse form data")
+				warning.Render(GetContext(r), w)
+				return
+			}
+			id := r.FormValue("id")
+			name := r.FormValue("themeName")
+
+			themeToSave := Theme{
+				Name: name,
+			}
+
+			if len(id) > 0 {
+				themeId, err := strconv.Atoi(id)
+				if err != nil {
+					warning := warning("Invalid theme ID")
+					warning.Render(GetContext(r), w)
+					return
+				}
+				themeToSave.ID = uint(themeId)
+
+			}
+
+			theme, err := SaveTheme(db, themeToSave)
+			if err != nil {
+				warning := warning(fmt.Sprintf("Failed to save theme - %s", err))
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			themeEd := editTheme(*theme)
+			themeEd.Render(GetContext(r), w)
+			return
+
+		case "GET":
+			themeIdStr := chi.URLParam(r, "themeId")
+
+			themeId := 0
+
+			if len(themeIdStr) == 0 {
+				themeIdRes, err := strconv.Atoi(themeIdStr)
+				if err != nil {
+					warning := warning("Invalid themeId")
+					warning.Render(GetContext(r), w)
+					return
+				}
+
+				themeId = themeIdRes
+			}
+
+			theme := GetActiveTheme(db, uint(themeId))
+			themes := GetThemes(db)
+			themeEdit := setTheme(themes, theme.ID, true)
+			themeEdit.Render(GetContext(r), w)
+			return
+
+		}
+	}
+}
+
+func getThemeIDOrRedirect(w http.ResponseWriter, r *http.Request) (uint, error) {
+	themeId, err := getThemeID(r)
+	if err != nil {
+		w.Header().Add("HX-Redirect", "/set-theme")
+		return 0, err
+	}
+	return themeId, nil
 }
 
 func imageHandler(imageDir string) http.HandlerFunc {
@@ -342,6 +487,11 @@ func chatTypeHandler(db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
+
+			themeId, err := getThemeIDOrRedirect(w, r)
+			if err != nil {
+				return
+			}
 
 			chatTypes, err := GetChatTypes(db, themeId)
 			if err != nil {
@@ -464,6 +614,11 @@ func chatListHandler(db *gorm.DB) http.HandlerFunc {
 					warning.Render(GetContext(r), w)
 					return
 				}
+			}
+
+			themeId, err := getThemeIDOrRedirect(w, r)
+			if err != nil {
+				return
 			}
 
 			chatTypes, err := GetChatTypes(db, uint(themeId))
@@ -1139,7 +1294,11 @@ func singleHomeHandler(db *gorm.DB) http.HandlerFunc {
 				return
 			}
 
-			pointMeta := GetPointMeta(db)
+			themeId, err := getThemeIDOrRedirect(w, r)
+			if err != nil {
+				return
+			}
+			pointMeta := GetPointMeta(db, themeId)
 
 			viewMode := r.URL.Query().Get("viewMode")
 
@@ -1287,7 +1446,12 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 				lat := r.URL.Query().Get("lat")
 				lng := r.URL.Query().Get("lng")
 
-				pointMeta := GetPointMeta(db)
+				themeId, err := getThemeID(r)
+				if err != nil {
+					w.Header().Add("HX-Redirect", "/set-theme")
+				}
+
+				pointMeta := GetPointMeta(db, themeId)
 
 				homeForm := homeForm(pointMeta, lat, lng, "")
 				homeForm.Render(GetContext(r), w)
@@ -1398,7 +1562,11 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 				msg = "Updated Point"
 			}
 
-			pointMeta := GetPointMeta(db)
+			themeId, err := getThemeID(r)
+			if err != nil {
+				w.Header().Add("HX-Redirect", "/set-theme")
+			}
+			pointMeta := GetPointMeta(db, themeId)
 
 			viewMode := r.URL.Query().Get("viewMode")
 

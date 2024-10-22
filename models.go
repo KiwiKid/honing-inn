@@ -14,6 +14,12 @@ type Factor struct {
 	DisplayOrder int    `json:"display_order"`
 }
 
+type Theme struct {
+	ID          uint   `gorm:"primaryKey"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 // Home represents a home with specific attributes.
 type Home struct {
 	ID              uint      `gorm:"primaryKey"`
@@ -74,6 +80,7 @@ type PointMeta struct {
 	icons       []PointIcons
 	factors     []Factor
 	actionModes []ActionMode
+	theme       Theme
 }
 
 type ActionMode struct {
@@ -135,10 +142,13 @@ type ChatMeta struct {
 	SelectedChatID uint
 	ChatTypeID     uint
 	ThemeID        uint
+	ThemeName      string
 	HomeID         uint
 }
 
-func GetPointMeta(db *gorm.DB) PointMeta {
+func GetPointMeta(db *gorm.DB, themeIDOverride uint) PointMeta {
+
+	activeTheme := GetActiveTheme(db, themeIDOverride)
 
 	allFactors := GetFactors(db)
 
@@ -162,5 +172,6 @@ func GetPointMeta(db *gorm.DB) PointMeta {
 			{ID: 6, Key: "manage", Name: "Manage", Details: manageDescription()},
 			{ID: 7, Key: "factor", Name: "Factors", Details: factorListLoad()},
 		},
+		theme: activeTheme,
 	}
 }

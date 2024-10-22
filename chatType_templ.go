@@ -114,7 +114,7 @@ func addChatType(isOpen bool, themeId uint) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><div><label class=\"block text-sm font-medium text-gray-700\">Name</label> <input type=\"text\" name=\"name\" class=\"mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm\" placeholder=\"Enter chat type name\"></div><div><label class=\"block text-sm font-medium text-gray-700\">Prompt</label> <textarea rows=\"10\" cols=\"100\" type=\"text\" name=\"prompt\" class=\"mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm\" placeholder=\"Enter prompt\"></textarea></div><div><button type=\"submit\" class=\"w-full bg-blue-500 text-white py-2 px-4 rounded shadow hover:bg-blue-600\">Add Type</button></div></form></div>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><div><label class=\"block text-sm font-medium text-gray-700 form-label\">Name</label> <input type=\"text\" name=\"name\" class=\"mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm\" placeholder=\"Enter chat type name\"></div><div><label class=\"block text-sm font-medium text-gray-700 form-label\">Prompt</label> <textarea rows=\"10\" cols=\"100\" type=\"text\" name=\"prompt\" class=\"mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm\" placeholder=\"Enter prompt\"></textarea></div><div><button type=\"submit\" class=\"w-full bg-blue-500 text-white py-2 px-4 rounded shadow hover:bg-blue-600\">Add Type</button></div></form></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -197,7 +197,7 @@ func editChatType(themeId uint, chatType ChatType) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" Type</button><div><label class=\"block text-sm font-medium text-gray-700\">Name</label> <input type=\"text\" name=\"name\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" Type</button><div><label class=\"block text-sm font-medium text-gray-700 form-label\">Name</label> <input type=\"text\" name=\"name\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -210,7 +210,7 @@ func editChatType(themeId uint, chatType ChatType) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" class=\"mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm\" placeholder=\"Enter chat type name\"></div><div><label class=\"block text-sm font-medium text-gray-700\">Prompt</label> <textarea rows=\"10\" cols=\"100\" type=\"text\" name=\"prompt\" class=\"mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm\" placeholder=\"Enter prompt\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" class=\"mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm\" placeholder=\"Enter chat type name\"></div><div><label class=\"block text-sm font-medium text-gray-700 form-label\">Prompt</label> <textarea rows=\"10\" cols=\"100\" type=\"text\" name=\"prompt\" class=\"mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm\" placeholder=\"Enter prompt\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

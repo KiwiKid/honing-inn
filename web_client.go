@@ -1,9 +1,11 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"golang.org/x/net/html"
 )
@@ -19,8 +21,16 @@ type SiteMeta struct {
 }
 
 func GetWebMeta(url string) (*SiteMeta, error) {
-	// Make the GET request
-	resp, err := http.Get(url)
+
+	customTransport := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+
+	client := &http.Client{
+		Transport: customTransport,
+		Timeout:   10 * time.Second,
+	}
+	resp, err := client.Get(url)
 	if err != nil {
 		log.Printf("GetWebMeta - Failed to fetch URL: %v", err)
 		return nil, fmt.Errorf("error fetching URL: %v", err)

@@ -345,7 +345,7 @@ func addFactor() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" class=\"space-y-4\"><h3>add new factor</h3><!-- Labeled input fields --><div><label for=\"title\" class=\"block text-sm font-medium text-gray-700\">Title</label> <input type=\"text\" name=\"title\" id=\"title\" class=\"form-input mt-1 block w-full\"></div><!-- Buttons --><div class=\"flex space-x-4\"><button type=\"submit\" class=\"form-button\">Save</button> <button type=\"button\" class=\"form-button bg-gray-500 hover:bg-gray-600\" onclick=\"location.reload();\">Cancel</button></div></form>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" class=\"space-y-4\"><h3>add new factor</h3><!-- Labeled input fields --><div><label for=\"title\" class=\"block text-sm font-medium text-gray-700 form-label\">Title</label> <input type=\"text\" name=\"title\" id=\"title\" class=\"form-input mt-1 block w-full\"></div><!-- Buttons --><div class=\"flex space-x-4\"><button type=\"submit\" class=\"form-button\">Save</button> <button type=\"button\" class=\"form-button bg-gray-500 hover:bg-gray-600\" onclick=\"location.reload();\">Cancel</button></div></form>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -407,7 +407,7 @@ func editFactor(factor Factor, msg string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><!-- Labeled input fields --><div><label for=\"title\" class=\"block text-sm font-medium text-gray-700\">Title</label> <input type=\"text\" name=\"title\" id=\"title\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><!-- Labeled input fields --><div><label for=\"title\" class=\"block text-sm font-medium text-gray-700 form-label\">Title</label> <input type=\"text\" name=\"title\" id=\"title\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

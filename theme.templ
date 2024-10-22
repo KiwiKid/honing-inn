@@ -1,0 +1,59 @@
+package main
+
+import (
+    "fmt"
+)
+
+templ addTheme(){
+    <form hx-post="/theme">
+        <label>Theme Name
+            <input name="themeName" id="themeName"/>
+        </label>
+        <button type="submit">Create Theme</button>
+    </form>
+}
+
+templ editTheme(theme Theme){
+    <form hx-post="/theme">
+        <input id="ID" name="ID" value={ fmt.Sprintf("%d", theme.ID) } />
+        <label>Theme Name
+            <input name="themeName" id="themeName"/>
+        </label>
+        <button type="submit">Update Theme</button>
+    </form>
+}
+
+templ setTheme(themes []Theme, selectedThemeId uint, allowEdit bool){
+    if allowEdit {
+        @addTheme()
+    }
+    <h1>{fmt.Sprintf("%d", selectedThemeId)}</h1>
+    for _, t := range themes {
+        <div>
+            <details><summary>{t.Name}</summary>{fmt.Sprintf("%v", t)}</details>
+            <button hx-post={ fmt.Sprintf("/set-theme/%d", t.ID) } 
+                if selectedThemeId == t.ID { 
+                    style="border-style:solid"
+                }
+            >{t.Name}</button>
+            if allowEdit {
+                @editTheme(t)
+            }
+        </div>
+    }
+}
+
+templ setThemeContainer(themes []Theme, selectedThemeId uint, allowEdit bool){
+    <head>
+      @globalHeadLinks()
+    </head>
+    <body hx-indicator=".loading-bar" onload={ mapActor() }>
+
+        @globalStyles()
+
+        <div>
+            @setTheme(themes, selectedThemeId, allowEdit)
+        </div>
+
+    </body>
+}
