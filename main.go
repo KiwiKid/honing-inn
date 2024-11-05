@@ -122,6 +122,8 @@ func main() {
 	r.Get("/mapmanager", mapManagerHandler(db))
 	r.Get("/set-theme", setThemeHandler(db))
 	r.Post("/set-theme/{themeId:[0-9]+}", setThemeHandler(db))
+
+	r.Get("/theme", themeEditHandler(db))
 	r.Post("/theme", themeEditHandler(db))
 
 	// Define routes with method-specific handlers
@@ -1624,7 +1626,7 @@ func homeUrlHandler(db *gorm.DB) http.HandlerFunc {
 			url := r.FormValue("url")
 
 			if len(url) == 0 {
-				urlIn := urlInput("", "", false, "(no URL provided)")
+				urlIn := urlInput("", "", false, "no URL provided")
 				urlIn.Render(GetContext(r), w)
 				return
 			}

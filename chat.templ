@@ -4,9 +4,6 @@ import (
     "fmt"
 )
 
-templ loadChat(themeId uint, homeId uint, chatTypeId uint){
-    <div hx-get={ fmt.Sprintf("/chatlist?themeId=%d&homeId=%d&chatTypeId=%d", themeId, homeId, chatTypeId)} hx-trigger="revealed" hx-swap="outerHTML">[loadChat]</div>
-}
 
 templ chatTypeNav(chatTypes []ChatType, chatMeta ChatMeta){
     <div>[chatTypeNav]
@@ -21,13 +18,20 @@ templ chatTypeNav(chatTypes []ChatType, chatMeta ChatMeta){
     </div>
 }
 
+templ loadEmptyChat(themeId uint, homeId uint, msg string){
+    if len(msg) > 0 {
+        <div><h3>{msg}</h3></div>
+    }
+    <div hx-get={ fmt.Sprintf("/chatlist?themeId=%d&homeId=%d", themeId, homeId)} hx-trigger="revealed" hx-swap="outerHTML">[loadChat]</div>
+}
+
 templ emptyChat(chats []Chat, chatTypes []ChatType, chatMeta ChatMeta, swapOOB bool){
     
     <div id="chat-box" 
         if swapOOB { 
             hx-swap-oob="true"
         }
-        class="">[emptyChat { fmt.Sprintf("chats: %d", len(chats))}]
+        >[emptyChat { fmt.Sprintf("chats: %d", len(chats))}]
         <div>
             @chatTypeNav(chatTypes, chatMeta)
             { fmt.Sprintf("%+v", chatMeta)}
@@ -39,14 +43,15 @@ templ emptyChat(chats []Chat, chatTypes []ChatType, chatMeta ChatMeta, swapOOB b
         }
         if len(chats) > 0 {
             @chatRatingListView(chats)
-            
-
+        }
+        if len(chats) > 0 {
+            for _, c := range chats {
+                @deleteChat(c.ID, c.ChatTypeTitle)
+            }
         }
         @createAllChatsForm(chatMeta, chatTypes)
-        
     </div>
 }
-
 
 templ createChatList(){
     <div>[createChatList]</div>
@@ -63,12 +68,9 @@ templ chatList(chats []Chat, chatMeta ChatMeta, chatTypeID uint){
             @createChatForm(chatMeta, chatTypeID)
         }
         
-
-
         for _, c := range chats {
             @chat(c)
         }
-
 
     </div>
 }
@@ -94,9 +96,10 @@ templ chat(chat Chat){
 
 templ chatRatingListView(chats []Chat){
     [chatRatingListView]
+    <div >
     for _, c := range chats {
         <article class="border-b">
-            <details class="group">
+            <details class="group" >
                 <summary class="w-full text-left p-4 bg-gray-100 hover:bg-gray-200 flex justify-between items-center cursor-pointer">
                     <span>{ c.ChatTypeTitle }</span>
                      if c.Rating > 0 {
@@ -110,14 +113,29 @@ templ chatRatingListView(chats []Chat){
                         </div>
                     }
                 </summary>
-                <section class="p-4 bg-gray-50">
+                <section class="p-4 bg-gray-50" style="width: 100%; 
+    height: 300px; 
+    overflow-y: auto; 
+    overflow-x: hidden; 
+    padding: 16px; 
+    background-color: #f9f9f9; 
+    border: 1px solid #ddd; 
+    border-radius: 8px; 
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+    scroll-behavior: smooth;">
                     for _, ch := range c.Results {
+                        <h1>Prompt</h1>
+                        <p><pre>{c.Prompt}</pre></p>
+                        <h1>Result</h1>
                         <p><pre>{ch.Result}</pre></p>
+                        <h1>Debug</h1>
+                        <p><pre>{fmt.Sprintf("%v", ch)}</pre></p>
                     }
                 </section>
             </details>
         </article>
     }
+    </div>
 }
 
 
@@ -142,5 +160,11 @@ templ createAllChatsForm(chatMeta ChatMeta, chatTypes []ChatType){
             <input type="hidden" name="ThemeID" value={ fmt.Sprintf("%d", chatMeta.ThemeID) }/>
             <button type="submit">Research ALL</button>
         </form>
+    </div>
+}
+
+templ deleteChat(chatTypeId uint, chatTypeName string){
+    <div>
+        <button hx-delete={ fmt.Sprintf("/chat/%d", chatTypeId)}>delete {chatTypeName} research</button>
     </div>
 }

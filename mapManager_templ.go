@@ -90,7 +90,7 @@ func mapManager(meta PointMeta) templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<head><script src=\"https://unpkg.com/htmx.org@1.9.0\" integrity=\"sha384-aOxz9UdWG0yBiyrTwPeMibmaoq07/d3a96GCbb9x60f3mOt5zwkjdbcHFnKH8qls\" crossorigin=\"anonymous\"></script></head><body><h1>Themes</h1><div hx-get=\"/set-theme\" hx-swap=\"this\" hx-trigger=\"revealed\"></div><div class=\"mt-2\"><a href=\"/\" target=\"_\" style=\"padding: 10px\">&lt; &lt; &lt; &lt; Back</a></div><h1>Types</h1>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<head><script src=\"https://unpkg.com/htmx.org@1.9.0\" integrity=\"sha384-aOxz9UdWG0yBiyrTwPeMibmaoq07/d3a96GCbb9x60f3mOt5zwkjdbcHFnKH8qls\" crossorigin=\"anonymous\"></script></head><body><h1>Themes</h1><div hx-get=\"/theme\" hx-swap=\"this\" hx-trigger=\"revealed\"></div><div class=\"mt-2\"><a href=\"/\" target=\"_\" style=\"padding: 10px\">&lt; &lt; &lt; &lt; Back</a></div><h1>Types</h1>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

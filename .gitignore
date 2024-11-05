@@ -1,3 +1,6 @@
 tmp/**/*
 tmp/images/
 tmp/build-errors.log
+.env
+dev.db
+tmp/build-errors.log

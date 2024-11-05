@@ -156,6 +156,8 @@ func GetPointMeta(db *gorm.DB, themeIDOverride uint) PointMeta {
 		types: []PointTypes{
 			{ID: 1, Name: "Home"},
 			{ID: 2, Name: "RedFlag"},
+			{ID: 3, Name: "Office"},
+			{ID: 4, Name: "LocationOfInterest"},
 		},
 		icons: []PointIcons{
 			{ID: 1, Name: "Home"},

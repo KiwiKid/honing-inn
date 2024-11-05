@@ -5,7 +5,7 @@ import (
 )
 
 templ warning(msg string){
-    <div style="display:block; height:1rem" class="p-4 bg-red-50 text-red-800">{msg}</div>
+    <div style="display:block; height:1rem padding: 1rem;  color: #991B1B; background-color: #FEF2F2;  " class="p-4 bg-red-50 text-red-800">⚠ ({msg})</div>
 }
 
 templ warningWithDetail(msg string, details string){
@@ -280,8 +280,7 @@ templ globalStyles(){
 
 
 templ addPointsDescription(){
-    <div>Add new points - houses or red flags </div>
-    <div>[TODO:addpointType selection]</div>
+    <div>Add new points - houses, locations of interest, offices, red flags etc </div>
 }
 
 templ addAreasDescription(){

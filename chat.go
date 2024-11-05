@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -34,8 +35,12 @@ type OpenAIResponse struct {
 
 func callAndSavePerplexityAPI(db *gorm.DB, home Home, chatType ChatType) (*Chat, error) {
 
+	log.Printf("Calling Perplexity API for home %v and chat type %v", home.ID, chatType.ID)
 	config := buildPromptConfig(home, chatType)
 
+	log.Printf("Using Config %s", config.UserPrompt)
+	log.Printf("Using Config %s", config.StartSystemPrompt)
+	log.Printf("Using Config %v", config.Replacements)
 	response, err := callPerplexityAPI(config)
 	if err != nil {
 		return nil, err
@@ -151,8 +156,14 @@ func chatHandler(db *gorm.DB) http.HandlerFunc {
 				}
 			}
 
-			if home.Title == "" {
-				warn := warning("Home title is empty - try adding a title or enter the url")
+			if home.CleanAddress == "" {
+				warn := warning("Home Address is empty - try adding a URL or enter it manually via home edit")
+				warn.Render(GetContext(r), w)
+				return
+			}
+
+			if home.CleanAddress == "" {
+				warn := warning("Home title is empty - try adding a URL or enter it manually via home edit")
 				warn.Render(GetContext(r), w)
 				return
 			}
@@ -208,12 +219,15 @@ func chatHandler(db *gorm.DB) http.HandlerFunc {
 			return
 		case http.MethodDelete:
 			// Delete chat
+
 			chatIdStr := chi.URLParam(r, "chatId")
 			if chatIdStr == "" {
 				warning := warning("chatId ID not provided")
 				warning.Render(GetContext(r), w)
 				return
 			}
+
+			log.Printf("DELETE chat %s!", chatIdStr)
 
 			id, err := strconv.Atoi(chatIdStr)
 			if err != nil {
@@ -229,7 +243,10 @@ func chatHandler(db *gorm.DB) http.HandlerFunc {
 				return
 			}
 
-			reload := loadChat(chat.ThemeID, chat.HomeID, chat.ChatType)
+			msg := fmt.Sprintf("Deleted chat %s (%d)", chat.ChatTypeTitle, chat.ID)
+
+			log.Printf("loadEmptyChat(%v, %v, %v)", chat.ThemeID, chat.HomeID, 0)
+			reload := loadEmptyChat(chat.ThemeID, chat.HomeID, msg)
 			reload.Render(GetContext(r), w)
 			return
 		}
