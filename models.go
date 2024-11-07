@@ -15,9 +15,10 @@ type Factor struct {
 }
 
 type Theme struct {
-	ID          uint   `gorm:"primaryKey"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	ID                uint   `gorm:"primaryKey"`
+	Name              string `json:"name"`
+	Description       string `json:"description"`
+	StartSystemPrompt string `json:"start_system_prompt"`
 }
 
 // Home represents a home with specific attributes.
@@ -33,6 +34,12 @@ type Home struct {
 	ImageUrl        string    `gorm:"default:null"`
 	Notes           string    `gorm:"default:null" form:"notes"`
 	RemoveRequestAt time.Time `gorm:"default:null"`
+	Postcode        string
+	State           string
+	Country         string
+	Road            string
+	HouseNumber     string
+	DisplayName     string
 }
 
 // HomeFactorRating represents a rating for a specific factor of a home.
@@ -83,6 +90,18 @@ type PointMeta struct {
 	theme       Theme
 }
 
+type AddressInitInfo struct {
+	Lat         string
+	Lng         string
+	Suburb      string
+	Road        string
+	Postcode    string
+	State       string
+	Country     string
+	HouseNumber string
+	DisplayName string
+}
+
 type ActionMode struct {
 	ID        uint
 	Key       string
@@ -113,11 +132,12 @@ type ImageOverlay struct {
 }
 
 type ChatType struct {
-	ID          uint   `gorm:"primaryKey"`
-	Name        string `json:"name"`
-	Prompt      string `json:"prompt"`
-	ThemeID     uint   `json:"theme_id"`
-	AddressType string `json:"address_type"`
+	ID                        uint   `gorm:"primaryKey"`
+	Name                      string `json:"name"`
+	Prompt                    string `json:"prompt"`
+	ThemeID                   uint   `json:"theme_id"`
+	AddressType               string `json:"address_type"`
+	StartSystemPromptOverride string `json:"start_system_prompt_override"`
 }
 
 type Chat struct {

@@ -33,10 +33,11 @@ type OpenAIResponse struct {
 	} `json:"choices"`
 }
 
-func callAndSavePerplexityAPI(db *gorm.DB, home Home, chatType ChatType) (*Chat, error) {
+func callAndSavePerplexityAPI(db *gorm.DB, home Home, chatType ChatType, theme Theme) (*Chat, error) {
 
 	log.Printf("Calling Perplexity API for home %v and chat type %v", home.ID, chatType.ID)
-	config := buildPromptConfig(home, chatType)
+
+	config := buildPromptConfig(home, chatType, theme)
 
 	log.Printf("Using Config %s", config.UserPrompt)
 	log.Printf("Using Config %s", config.StartSystemPrompt)
@@ -177,10 +178,12 @@ func chatHandler(db *gorm.DB) http.HandlerFunc {
 					return
 				}
 
+				theme := GetActiveTheme(db, uint(themeIDUint))
+
 				newChats := make([]Chat, 0)
 				for _, chatType := range chatTypes {
 
-					newChat, err := callAndSavePerplexityAPI(db, *home, chatType)
+					newChat, err := callAndSavePerplexityAPI(db, *home, chatType, theme)
 					if err != nil {
 						warning := warning(fmt.Sprintf("Failed to call Perplexity API: %v", err))
 						warning.Render(GetContext(r), w)
@@ -207,7 +210,9 @@ func chatHandler(db *gorm.DB) http.HandlerFunc {
 				return
 			}
 
-			newChat, err := callAndSavePerplexityAPI(db, *home, *chatType)
+			theme := GetActiveTheme(db, uint(themeIDUint))
+
+			newChat, err := callAndSavePerplexityAPI(db, *home, *chatType, theme)
 			if err != nil {
 				warning := warning(fmt.Sprintf("Failed to call Perplexity API: %v", err))
 				warning.Render(GetContext(r), w)

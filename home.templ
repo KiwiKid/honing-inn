@@ -5,7 +5,7 @@ import (
     "github.com/dustin/go-humanize"
 )
 templ pointListLoad(){
-    <div hx-get="/homes?viewMode=list" hx-trigger="revealed">loading points...</div>
+    <div hx-get="/homes?viewMode=list" hx-trigger="visible">loading points...</div>
 }
 
 
@@ -106,15 +106,17 @@ templ homeView(home Home, msg string, pointMeta PointMeta, ratings []HomeFactorA
     </div>
 }
 
-templ homeForm(pointMeta PointMeta, lat string, lng string, msg string){
+templ homeForm(pointMeta PointMeta, address AddressInitInfo, msg string){
    <form hx-post="/homes?viewMode=edit" class="space-y-4" hx-target="this">
     if len(msg) > 0 {
         <div class="text-red-500">{ msg }</div>
     }
 
     <!-- Hidden inputs -->
-    <input type="hidden" name="lat" value={ fmt.Sprintf("%v", lat) }>
-    <input type="hidden" name="lng" value={ fmt.Sprintf("%v", lng) }>
+    <input type="hidden" name="lat" value={ fmt.Sprintf("%v", address.Lat) }/>
+    <input type="hidden" name="lng" value={ fmt.Sprintf("%v", address.Lng) }/>
+
+
 
     <!-- Select dropdown -->
     <div>
@@ -126,10 +128,18 @@ templ homeForm(pointMeta PointMeta, lat string, lng string, msg string){
         </select>
     </div>
 
+    <input style="width: 100%" name="displayName" value={address.DisplayName}/>
     <!-- Latitude and Longitude -->
     <div class="text-sm text-gray-500">
-        { fmt.Sprintf("[%v, %v]", lat, lng) }
+        { fmt.Sprintf("[%v, %v]", address.Lat, address.Lng) }
     </div>
+
+    <input name="houseNumber" value={address.HouseNumber}/>
+    <input name="road" value={address.Road}/>
+    <input name="suburb" value={address.Suburb}/>
+    <input name="country" value={address.Country}/>
+    <input name="state" value={address.State}/>
+    <div>{fmt.Sprintf("%+v", address)}</div>
 
     <!-- Buttons -->
     <div class="flex space-x-4">

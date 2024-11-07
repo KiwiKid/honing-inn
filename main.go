@@ -1448,6 +1448,26 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 				lat := r.URL.Query().Get("lat")
 				lng := r.URL.Query().Get("lng")
 
+				suburb := r.URL.Query().Get("suburb")
+				postcode := r.URL.Query().Get("postcode")
+				state := r.URL.Query().Get("state")
+				country := r.URL.Query().Get("country")
+				road := r.URL.Query().Get("road")
+				houseNumber := r.URL.Query().Get("houseNumber")
+				displayName := r.URL.Query().Get("displayName")
+
+				addressInfo := &AddressInitInfo{
+					Suburb:      suburb,
+					Postcode:    postcode,
+					Road:        road,
+					State:       state,
+					Country:     country,
+					HouseNumber: houseNumber,
+					DisplayName: displayName,
+					Lat:         lat,
+					Lng:         lng,
+				}
+
 				themeId, err := getThemeID(r)
 				if err != nil {
 					w.Header().Add("HX-Redirect", "/set-theme")
@@ -1455,7 +1475,7 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 
 				pointMeta := GetPointMeta(db, themeId)
 
-				homeForm := homeForm(pointMeta, lat, lng, "")
+				homeForm := homeForm(pointMeta, *addressInfo, "")
 				homeForm.Render(GetContext(r), w)
 				return
 			}
@@ -1511,12 +1531,12 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 				return
 			}
 
-			cAddress := r.FormValue("cleanAddress")
+			cAddress := r.FormValue("displayName")
 			if len(cAddress) == 0 && len(title) > 0 {
 				cAddress = cleanAddress(title)
 			}
 
-			cSuburb := r.FormValue("cleanSuburb")
+			cSuburb := r.FormValue("suburb")
 
 			// Create a Home object with form data
 			home := Home{
@@ -1529,6 +1549,12 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 				Notes:        notes,
 				Url:          url,
 				ImageUrl:     imageUrl,
+				Postcode:     r.FormValue("postcode"),
+				State:        r.FormValue("state"),
+				Country:      r.FormValue("country"),
+				Road:         r.FormValue("road"),
+				HouseNumber:  r.FormValue("houseNumber"),
+				DisplayName:  r.FormValue("displayName"),
 			}
 
 			removeRequestAt := r.FormValue("removeRequestAt")

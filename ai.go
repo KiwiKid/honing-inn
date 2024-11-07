@@ -90,10 +90,11 @@ func cleanAddress(address string) string {
 	return address
 }
 
-func getReplacements(home Home, addressType string) map[string]string {
+func getReplacements(home Home, addressType string, chatType ChatType) map[string]string {
 	return map[string]string{
 		"{address}": home.CleanAddress,
 		"{suburb}":  home.CleanSuburb,
+		"{topic}":   chatType.Name,
 	}
 }
 
@@ -118,25 +119,35 @@ func extractRating(message string) int {
 	return -1
 }
 
-func buildPromptConfig(home Home, chatType ChatType) PromptConfig {
-	// Call Perplexity API based on chatTypeID
-	replacements := getReplacements(home, chatType.AddressType)
+func getStartSystemPrompt(theme Theme, chatType ChatType) string {
+	if chatType.StartSystemPromptOverride != "" {
+		return chatType.StartSystemPromptOverride
+	} else if theme.StartSystemPrompt != "" {
+		return theme.StartSystemPrompt
+	} else {
+		return `You are speaking to a expert assistant in home researching specific aspects of home buying researching {topic}. Be concise and truthfully answer questions in the context of purchasing a home. Always finish your answers. Give the address a relative rating (1 to 3 with 3 being the best score) compared to other addresses in the city like this:
+
+		This property is located in a relatively quiet area. However, it is situated near major roads like Riccarton Road and Blenheim Road, which are significant thoroughfares in the city. These roads can generate some traffic noise and activity at peak hours.
+		Given the proximity to these roads, I would rate the traffic noise and activity around this property is relatively high but the area is generally residential and not directly adjacent to high-traffic zones like highways or major commercial centers.
+		For a more precise assessment, it's important to note that Riccarton Road and Blenheim Road are local roads with moderate traffic levels, especially during peak hours. However, they do not compare to the high-traffic volumes found on major highways or central business districts in Christchurch.
+	
+		The overall environment around 7 Middleton Road is relatively peaceful and suitable for residential living.
+	
+		Rating: 3
+		`
+	}
+}
+
+func buildPromptConfig(home Home, chatType ChatType, theme Theme) PromptConfig {
+	replacements := getReplacements(home, chatType.AddressType, chatType)
+	startSystemPrompt := getStartSystemPrompt(theme, chatType)
 
 	return PromptConfig{
-		Token: os.Getenv("PERPLEXITY_API_TOKEN"),
-		StartSystemPrompt: `You are speaking to a expert assistant in home buying decisions and real estate. Be concise and truthfully answer questions in the context of purchasing a home. Always finish your answers Give the address a relative rating (1-5) compared to other addresses in the city like this: 
-
-	This property is located in a relatively quiet area. However, it is situated near major roads like Riccarton Road and Blenheim Road, which are significant thoroughfares in the city. These roads can generate some traffic noise and activity at peak hours.
-
-	Given the proximity to these roads, I would rate the traffic noise and activity around this property is relatively high but the area is generally residential and not directly adjacent to high-traffic zones like highways or major commercial centers.
-
-	For a more precise assessment, it's important to note that Riccarton Road and Blenheim Road are local roads with moderate traffic levels, especially during peak hours. However, they do not compare to the high-traffic volumes found on major highways or central business districts in Christchurch. The overall environment around 7 Middleton Road is relatively peaceful and suitable for residential living.
-	
-	Rating: 4
-	`,
-		UserPrompt:       chatType.Prompt,
-		Replacements:     replacements,
-		ExistingMessages: []Message{},
+		Token:             os.Getenv("PERPLEXITY_API_TOKEN"),
+		StartSystemPrompt: startSystemPrompt,
+		UserPrompt:        chatType.Prompt,
+		Replacements:      replacements,
+		ExistingMessages:  []Message{},
 	}
 
 }

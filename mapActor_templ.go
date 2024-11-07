@@ -36,8 +36,8 @@ func span() templ.Component {
 
 func mapActor() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_mapActor_5c7f`,
-		Function: `function __templ_mapActor_5c7f(){/**
+		Name: `__templ_mapActor_aa9a`,
+		Function: `function __templ_mapActor_aa9a(){/**
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Map} L 
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Marker} L.Marker
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').LatLng} L.LatLng
@@ -186,7 +186,6 @@ getMap(){
       }
   }
 
-
       resizeImage(scaleFactor) {
           if(!window.mapActor.confirmImageSelected())return;
           const bounds = window.mapActor.imageOverlay.getBounds();
@@ -288,7 +287,16 @@ getMap(){
         position: 'topleft',
       })
       .on('markgeocode', function(e) {
-        window.mapActor.addPoint(e.geocode.center)
+        debugger
+        window.mapActor.addPoint(e.geocode.center, {
+          'suburb': e.geocode.properties.address.suburb,
+          'postcode': e.geocode.properties.address.postcode,
+          'state': e.geocode.properties.address.state,
+          'road': e.geocode.properties.address.road,
+          'houseNumber': e.geocode.properties.address.house_number,
+          'displayName': e.geocode.properties.display_name,
+          'country': e.geocode.properties.country
+        })
 
         var bbox = e.geocode.bbox;  
         var poly = L.polygon([
@@ -308,9 +316,7 @@ getMap(){
             const popups = document.querySelectorAll(".leaflet-popup-content-wrapper")
             popups.forEach((p) => {
                 htmx.process(p)
-                p._updateLayout()
             })
-
         });
       this.map.on('click', (e) => this.handleMapClick(e, this.map))
       this.map.on('moveend', (e) => this.handleMapMoveEnd(e))
@@ -418,8 +424,15 @@ getMap(){
     window.layerControl = layerControl
   }
 
-  addPoint(latlng){
-    const popup = ` + "`" + `<div hx-get="/homes?lat=${latlng.lat}&lng=${latlng.lng}" hx-trigger="revealed">loading point..</div>` + "`" + `
+  addPoint(latlng, extraParams = {}){
+
+    const qs = new URLSearchParams({
+      lat: latlng.lat,
+      lng: latlng.lng,
+      ...extraParams
+    })
+
+    const popup = ` + "`" + `<div hx-get="/homes?${qs.toString()}"  hx-trigger="revealed">loading point..</div>` + "`" + `
 
     const marker = window.leaflet.circleMarker([latlng.lat, latlng.lng], { color: 'green', radius: 10})
 
@@ -1211,7 +1224,7 @@ handleMapMoveEnd(e){
   
       
 }`,
-		Call:       templ.SafeScript(`__templ_mapActor_5c7f`),
-		CallInline: templ.SafeScriptInline(`__templ_mapActor_5c7f`),
+		Call:       templ.SafeScript(`__templ_mapActor_aa9a`),
+		CallInline: templ.SafeScriptInline(`__templ_mapActor_aa9a`),
 	}
 }

@@ -81,5 +81,7 @@ func (o *osmClient) GeocodeAddress(address string) ([]GeocodeResult, error) {
 		}
 	}
 
+	log.Printf("Geocoded %d results for address: %s", len(results), address)
+
 	return results, nil
 }

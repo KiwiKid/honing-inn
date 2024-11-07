@@ -76,11 +76,8 @@
             pkgs.golint
           ];
           shellHook = ''
-            git config user.name $GIT_AUTHOR_USER
-            git config user.email $GIT_AUTHOR_EMAIL
-           export  DATABASE_URL=./dev.db
-           export IMAGE_DIR=./tmp/images
-
+            export DATABASE_URL=./dev.db
+            export IMAGE_DIR=./tmp/images
             export PASS=pass
             code .
             tmux kill-session -t devSession
