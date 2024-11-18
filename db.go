@@ -16,7 +16,7 @@ func DBInit(config EnvConfig) (*gorm.DB, error) {
 	}
 
 	// Migrate the schema
-	err = db.AutoMigrate(&Factor{}, &Home{}, &HomeFactorRating{}, &Shape{}, &ShapeType{}, &ShapeKind{}, &ImageOverlay{}, &ChatType{}, &Chat{}, &ChatResult{}, &Theme{})
+	err = db.AutoMigrate(&Factor{}, &Home{}, &HomeFactorRating{}, &Shape{}, &ShapeType{}, &ShapeKind{}, &ImageOverlay{}, &ChatType{}, &Chat{}, &ChatResult{}, &Theme{}, &FractalSearch{}, &Point{})
 	if err != nil {
 		log.Fatal("failed to migrate database:", err)
 	}
@@ -382,4 +382,94 @@ func DeleteAll(db *gorm.DB) {
 	db.Exec("DELETE FROM homes")
 	db.Exec("DELETE FROM factors")
 	db.Exec("DELETE FROM home_factor_ratings")
+}
+
+func CreateFractalSearch(db *gorm.DB, search FractalSearch) (*FractalSearch, error) {
+	err := db.Create(&search)
+	if err.Error != nil {
+		return nil, err.Error
+	}
+	return &search, nil
+}
+
+func GetFractalSearch(db *gorm.DB, id uint) (*FractalSearch, error) {
+	var search FractalSearch
+	err := db.First(&search, id)
+	if err.Error != nil {
+		return nil, err.Error
+	}
+	return &search, nil
+}
+
+func GetFractalSearchFull(db *gorm.DB, id uint) (*FractalSearchFull, error) {
+	var search FractalSearchFull
+	fs, err := GetFractalSearch(db, id)
+	if err != nil {
+		return nil, err
+	}
+
+	search.FractalSearch = *fs
+
+	points, err := GetPoints(db)
+	if err != nil {
+		return nil, err
+	}
+	search.Points = points
+
+	return &search, nil
+}
+
+func GetFractalSearches(db *gorm.DB, status string) ([]FractalSearch, error) {
+	var searches []FractalSearch
+	var err *gorm.DB
+	if len(status) > 0 {
+		err = db.Find(&searches).Where("status = ?", status)
+	} else {
+		err = db.Find(&searches)
+	}
+
+	if err.Error != nil {
+		return nil, err.Error
+	}
+	return searches, nil
+}
+
+func CreatePoint(db *gorm.DB, point Point) (*Point, error) {
+	err := db.Create(&point)
+	if err.Error != nil {
+		return nil, err.Error
+	}
+	return &point, nil
+}
+
+func GetPoints(db *gorm.DB) ([]Point, error) {
+	var points []Point
+	err := db.Find(&points)
+	if err.Error != nil {
+		return nil, err.Error
+	}
+	return points, nil
+}
+
+func DeletePoints(db *gorm.DB, id uint) error {
+	err := db.Exec("DELETE FROM points WHERE fractal_search_id = ?", id)
+	if err.Error != nil {
+		return err.Error
+	}
+	return nil
+}
+
+func DeleteFractalSearch(db *gorm.DB, id uint) (*FractalSearch, error) {
+	search := FractalSearch{ID: id}
+	sdRes := db.Delete(&search)
+	if sdRes.Error != nil {
+		return nil, sdRes.Error
+	}
+
+	err := DeletePoints(db, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &search, nil
 }

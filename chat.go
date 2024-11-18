@@ -257,3 +257,4 @@ func chatHandler(db *gorm.DB) http.HandlerFunc {
 		}
 	}
 }
+

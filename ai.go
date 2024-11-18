@@ -12,6 +12,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"gorm.io/gorm"
 )
 
 type PerplexityRequest struct {
@@ -29,11 +31,6 @@ type PerplexityRequest struct {
 	Stream                 bool      `json:"stream"`
 	PresencePenalty        float64   `json:"presence_penalty"`
 	FrequencyPenalty       float64   `json:"frequency_penalty"`
-}
-
-type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
 }
 
 // ErrorResponse represents the error structure returned by the API
@@ -95,6 +92,12 @@ func getReplacements(home Home, addressType string, chatType ChatType) map[strin
 		"{address}": home.CleanAddress,
 		"{suburb}":  home.CleanSuburb,
 		"{topic}":   chatType.Name,
+	}
+}
+
+func getGeoReplacements(fs FractalSearch) map[string]string {
+	return map[string]string{
+		"{location}": fs.DisplayName,
 	}
 }
 
@@ -297,5 +300,174 @@ func buildChat(response PerplexityResult, home Home, chatType ChatType) Chat {
 		Results:       chatResults,
 		Rating:        response.SuccessResults.Rating,
 		Prompt:        response.SuccessResults.prompt,
+	}
+}
+func parseFractalSearchResult(response PerplexityResult, fs FractalSearch) ([]FractalSearchResult, bool, error) {
+	if len(response.SuccessResults.Choices) == 0 {
+		return nil, true, errors.New("no choices returned in the response")
+	}
+
+	// Extract the message from the last choice
+	msg := response.SuccessResults.Choices[len(response.SuccessResults.Choices)-1].Message
+	fs.Messages = append(fs.Messages, msg)
+
+	// Split message content into lines
+	lines := strings.Split(msg.Content, "\n")
+	var results []FractalSearchResult
+	var currentResult *FractalSearchResult
+	var isComplete bool
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		// Handle the different line types
+		if strings.HasPrefix(line, "#") {
+			// New section (reset the current result)
+			if currentResult != nil {
+				results = append(results, *currentResult)
+			}
+			currentResult = &FractalSearchResult{
+				FractalSearchID: fs.ID,
+				DisplayName:     strings.TrimPrefix(line, "# "),
+				Points:          []string{},
+			}
+		} else if strings.HasPrefix(line, "-") {
+			// List item (add to Points)
+			if currentResult != nil {
+				currentResult.Points = append(currentResult.Points, strings.TrimPrefix(line, "- "))
+			}
+		} else if line == "LIST IS COMPLETE" {
+			// Completion indicator
+			isComplete = true
+		}
+	}
+
+	if currentResult != nil {
+		results = append(results, *currentResult)
+	}
+
+	return results, isComplete, nil
+}
+
+func progressFractalGeoSearch(db *gorm.DB, fs FractalSearch, theme Theme) (FractalSearch, error) {
+
+	promptConfig := buildGeoPromptConfig(fs, theme)
+	response, err := callPerplexityAPI(promptConfig)
+	if err != nil {
+		return fs, err
+	}
+
+	log.Printf("progress Fractal search: %+v", response)
+	msg := response.SuccessResults.Choices[len(response.SuccessResults.Choices)-1].Message
+	fs.Messages = append(fs.Messages, msg)
+
+	searchResult, isComplete, err := parseFractalSearchResult(response, fs)
+	if err != nil {
+		return fs, err
+	}
+
+	var points []Point
+	for _, result := range searchResult {
+		for _, point := range result.Points {
+			point, err := CreatePoint(db, Point{
+				ThemeID:         theme.ID,
+				Title:           point,
+				PointType:       result.PointTypeName,
+				FractalSearchID: fs.ID,
+			})
+			if err != nil {
+				return fs, err
+			}
+			points = append(points, *point)
+		}
+	}
+
+	if isComplete {
+		fs.Status = "complete"
+	} else {
+		fs.Status = "in-progress"
+	}
+
+	return fs, nil
+
+}
+
+func buildGeoPromptConfig(fs FractalSearch, theme Theme) PromptConfig {
+
+	replacements := getGeoReplacements(fs)
+	startSystemPrompt := getStartGeoSearchPrompt(theme)
+
+	promptConfig := PromptConfig{
+		StartSystemPrompt: startSystemPrompt,
+		UserPrompt:        fs.Query,
+		Replacements:      replacements,
+		ExistingMessages:  fs.Messages,
+		Token:             os.Getenv("PERPLEXITY_API_TOKEN"),
+	}
+
+	log.Printf("PromptConfig: %+v", promptConfig)
+
+	return promptConfig
+}
+
+func getStartGeoSearchPrompt(theme Theme) string {
+	if len(theme.StartGeoSystemPrompt) > 0 {
+		return theme.StartGeoSystemPrompt
+	} else {
+		return `You are designed to take a user's query, search for places or items matching the query, and return results in a structured format. Follow these steps:  
+		1. Categorize the results into logical groups, if applicable.  
+		2. Use headers ('#' for main categories, '##' for subcategories) to organize the information.  
+		3. Present items as bullet points, each on a single line, with relevant details, where applicable. Include details on the same line as the item.
+		4. At the end of your response, indicate whether the list is complete or incomplete by adding either 'LIST IS COMPLETE' or ''LIST IS INCOMPLETE'.  
+		
+**Example 1:**  
+# Great Walks  
+	- Routeburn Track  
+	- Milford Track  
+	- Kepler Track  
+	- Heaphy Track  
+	- Abel Tasman Coast Track  
+	- Tongariro Northern Circuit  
+	- Whanganui Journey  
+	- Lake Waikaremoana  
+	- Paparoa Track  
+	- Rakiura Track  
+	- Hump Ridge Track  
+	- Hollyford Track  
+	- Te Araroa Trail  
+		
+LIST IS COMPLETE  
+		
+**Example 2:**
+Query: Parks in Christchurch by size
+Result: 
+# Parks in Christchurch by size
+## **Big Parks**  
+- **Hagley Park**  
+- **Bottle Lake Forest Park**  
+- **Halswell Quarry Park**  
+- **The Groynes**  
+- **Travis Wetland Nature Heritage Park**
+
+## **Medium Parks**  
+- **Victoria Park**  
+- **Spencer Park**  
+- **Abberley Park**  
+- **Risingholme Park**
+
+## **Small Parks**  
+- **Woodham Park**  
+- **Local neighborhood reserves (e.g., Beverley Park, Linwood Park)**  
+
+---
+
+This grouping reflects relative size and significance based on their amenities and land area. Would you like more detailed descriptions or additional parks?
+		LIST IS INCOMPLETE  
+		
+		Be precise, clear, and consistent in your responses.
+`
 	}
 }

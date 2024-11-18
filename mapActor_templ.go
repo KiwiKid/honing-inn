@@ -36,8 +36,8 @@ func span() templ.Component {
 
 func mapActor() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_mapActor_aa9a`,
-		Function: `function __templ_mapActor_aa9a(){/**
+		Name: `__templ_mapActor_44fc`,
+		Function: `function __templ_mapActor_44fc(){/**
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Map} L 
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Marker} L.Marker
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').LatLng} L.LatLng
@@ -287,15 +287,22 @@ getMap(){
         position: 'topleft',
       })
       .on('markgeocode', function(e) {
-        debugger
+
+        console.log('markgeocode')
+        console.log(e)
+        
         window.mapActor.addPoint(e.geocode.center, {
           'suburb': e.geocode.properties.address.suburb,
           'postcode': e.geocode.properties.address.postcode,
           'state': e.geocode.properties.address.state,
           'road': e.geocode.properties.address.road,
           'houseNumber': e.geocode.properties.address.house_number,
+          'searchTerm': e.target._lastGeocode,
           'displayName': e.geocode.properties.display_name,
-          'country': e.geocode.properties.country
+          'country': e.geocode.properties.country,
+          'placeId': e.geocode.properties.place_id,
+          'addressType': e.geocode.properties.addresstype,
+          'boundingBox': e.geocode.properties.boundingbox
         })
 
         var bbox = e.geocode.bbox;  
@@ -592,10 +599,10 @@ handleMapClick(event, map){
         case 'existing-points':
           const controls = document.querySelector('.controls')
           controls.focus();
-          // query the all parent nodes for a 'data-home' attribute:
-          const homeData = event.originalEvent.target.closest('[data-home]').getAttribute('data-home')
-          if(homeData){
-            const homeObj = JSON.parse(homeData)
+          const homeDataElm = event.originalEvent.target.closest('[data-home]')
+          
+          if(homeDataElm){
+            const homeObj = JSON.parse(homeDataElm.getAttribute('data-home'))
             window.mapActor.panMap(new L.LatLng(homeObj.Lat, homeObj.Lng));
           }else{
             console.error('homeData not found')
@@ -603,6 +610,17 @@ handleMapClick(event, map){
           break;
         case 'factor':{
           break;
+        }
+        case 'queries':{
+          const controls = document.querySelector('.controls')
+          if(controls.contains(event.originalEvent.target)){
+            return
+          }
+          console.log('QUERIES')
+          console.log(event.originalEvent.target.id)
+          window.mapActor.highlightSearch()
+          break
+
         }
         default: {
             console.error(` + "`" + `mode  "${mode}" not found` + "`" + `)
@@ -669,7 +687,7 @@ handleMapMoveEnd(e){
         // Create a div element with the 'custom-control' class
         const controlDiv = L.DomUtil.create('div', 'custom-control');
         controlDiv.style.width = '400px';
-        controlDiv.style.height = '800px';
+        controlDiv.style.height = '600px';
         L.DomEvent.on(controlDiv, 'mousewheel', L.DomEvent.stopPropagation);
         //controlDiv.innerHTML = ` + "`" + `<div hx-get="/chatlist?themeId=1" hx-trigger="every 1s" style="height: 800px; width: 800px;" hx-swap="outerHTML">loading chatlist..</div>` + "`" + `
         controlDiv.innerHTML = ` + "`" + `<div hx-swap="outerHTML"><div id="chat-box">(select a home to get started)         <a href="/mapmanager" target="_">manage</a></div></div>` + "`" + `
@@ -691,7 +709,7 @@ handleMapMoveEnd(e){
      * @throws {Error} If the mode is invalid.
      */
     setMode(newMode) {
-      if (['none', 'point', 'area', 'image', 'add-image', 'navigate', 'manage', 'export', 'import', 'factor', 'existing-points'].includes(newMode)) {
+      if (['none', 'queries', 'point', 'area', 'image', 'add-image', 'navigate', 'manage', 'export', 'import', 'factor', 'existing-points'].includes(newMode)) {
         if(newMode === 'image' && window.mapActor.mode !== 'image'){
           const firstImgBtn = document.querySelectorAll('button[data-img-id]')[0]
           if(firstImgBtn){
@@ -725,10 +743,7 @@ handleMapMoveEnd(e){
 
         const modeBtn = document.querySelector(` + "`" + `button[data-action-mode-key="${newMode}"]` + "`" + `)
         modeBtn.style.backgroundColor = '#A9A9A9'
-        window.mapActor.mode = newMode;
-
-        // get first mode-details element after firstImgBtn
-        
+        window.mapActor.mode = newMode;      
 
       } else {
         throw new Error(` + "`" + `Invalid mode: ${newMode}` + "`" + `);
@@ -982,6 +997,11 @@ handleMapMoveEnd(e){
       highlightElement(controls)
     }
 
+    highlightSearch(){
+      const controls = document.querySelector('.leaflet-control-geocoder')
+      highlightElement(controls)
+    }
+
 
 
         // Function to collect and process shapes and homes
@@ -1224,7 +1244,7 @@ handleMapMoveEnd(e){
   
       
 }`,
-		Call:       templ.SafeScript(`__templ_mapActor_aa9a`),
-		CallInline: templ.SafeScriptInline(`__templ_mapActor_aa9a`),
+		Call:       templ.SafeScript(`__templ_mapActor_44fc`),
+		CallInline: templ.SafeScriptInline(`__templ_mapActor_44fc`),
 	}
 }

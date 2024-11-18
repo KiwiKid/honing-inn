@@ -16,6 +16,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -155,6 +156,12 @@ func main() {
 	r.Get("/homes", homeHandler(db))
 	r.Post("/homes", homeHandler(db))
 	r.Post("/homes/url", homeUrlHandler(db))
+
+	r.Get("/fractal", fractalSearchHandler(db))
+	r.Post("/fractal", fractalSearchHandler(db))
+	r.Get("/fractal/{fractalSearchId:[0-9]+}", fractalSearchHandler(db))
+	r.Put("/fractal/{fractalSearchId:[0-9]+}", fractalSearchHandler(db))
+	r.Delete("/fractal/{fractalSearchId:[0-9]+}", fractalSearchHandler(db))
 
 	r.Get("/", mapHandler(db))
 	r.Get("/controls", mapControlsHandler(db))
@@ -1436,7 +1443,9 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 		switch r.Method {
 		case "GET":
 			viewMode := r.URL.Query().Get("viewMode")
-			log.Printf("homeHandler - viewMode %s", viewMode)
+			addressType := r.URL.Query().Get("addressType")
+
+			log.Printf("homeHandler - viewMode:%s addressType:%s", viewMode, addressType)
 			switch viewMode {
 			case "list":
 				homes := GetHomes(db)
@@ -1445,39 +1454,101 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 				return
 			case "view":
 			default:
+				log.Printf("homeHandler - fractalSearchForm 0 ")
+
 				lat := r.URL.Query().Get("lat")
 				lng := r.URL.Query().Get("lng")
+				log.Printf("homeHandler - view [%s] %b", addressType, addressType == "city")
 
-				suburb := r.URL.Query().Get("suburb")
-				postcode := r.URL.Query().Get("postcode")
-				state := r.URL.Query().Get("state")
-				country := r.URL.Query().Get("country")
-				road := r.URL.Query().Get("road")
-				houseNumber := r.URL.Query().Get("houseNumber")
-				displayName := r.URL.Query().Get("displayName")
+				switch addressType {
+				case "city", "island", "country", "islet", "suburb", "locality", "park":
 
-				addressInfo := &AddressInitInfo{
-					Suburb:      suburb,
-					Postcode:    postcode,
-					Road:        road,
-					State:       state,
-					Country:     country,
-					HouseNumber: houseNumber,
-					DisplayName: displayName,
-					Lat:         lat,
-					Lng:         lng,
+					country := r.URL.Query().Get("country")
+					placeId := r.URL.Query().Get("placeId")
+					displayName := r.URL.Query().Get("displayName")
+					searchTerm := r.URL.Query().Get("searchTerm")
+
+					boundingBoxStr := r.URL.Query().Get("boundingBox")
+
+					boundingBox := strings.Split(boundingBoxStr, ",")
+
+					if len(boundingBox) != 4 {
+						warning := warning("Invalid bounding box")
+						warning.Render(GetContext(r), w)
+						return
+					}
+
+					boundingBoxArr := make([]float64, len(boundingBox))
+					err := error(nil)
+					for i, v := range boundingBox {
+						boundingBoxArr[i], err = strconv.ParseFloat(v, 64)
+						if err != nil {
+							warning := warning(fmt.Sprintf("Invalid bounding box - %s", err))
+							warning.Render(GetContext(r), w)
+							return
+						}
+					}
+
+					initFractalSearchInfo := &FractalAISearchInitInfo{
+						SearchTerm:  searchTerm,
+						DisplayName: displayName,
+						Country:     country,
+						PlaceId:     placeId,
+						AddressType: addressType,
+						BoundingBox: boundingBoxArr,
+					}
+
+					//warning := warning(fmt.Sprintf("Created FractalAISearchInitInfo %+v", initFractalSearchInfo))
+					//	warning.Render(GetContext(r), w)
+
+					fractalSearchForm := fractalSearchForm(*initFractalSearchInfo)
+					fractalSearchForm.Render(GetContext(r), w)
+					return
+
+				case "address":
+					suburb := r.URL.Query().Get("suburb")
+					postcode := r.URL.Query().Get("postcode")
+					state := r.URL.Query().Get("state")
+					country := r.URL.Query().Get("country")
+					road := r.URL.Query().Get("road")
+					houseNumber := r.URL.Query().Get("houseNumber")
+					displayName := r.URL.Query().Get("displayName")
+					searchTerm := r.URL.Query().Get("searchTerm")
+
+					addressInfo := &AddressInitInfo{
+						SearchTerm:  searchTerm,
+						Suburb:      suburb,
+						Postcode:    postcode,
+						Road:        road,
+						State:       state,
+						Country:     country,
+						HouseNumber: houseNumber,
+						DisplayName: displayName,
+						Lat:         lat,
+						Lng:         lng,
+					}
+
+					themeId, err := getThemeID(r)
+					if err != nil {
+						w.Header().Add("HX-Redirect", "/set-theme")
+					}
+
+					pointMeta := GetPointMeta(db, themeId)
+
+					homeForm := homeForm(pointMeta, *addressInfo, "")
+					homeForm.Render(GetContext(r), w)
+					return
+
+				default:
+					warning := warning(fmt.Sprintf("Invalid addressType - %s", addressType))
+					warning.Render(GetContext(r), w)
+					return
 				}
 
-				themeId, err := getThemeID(r)
-				if err != nil {
-					w.Header().Add("HX-Redirect", "/set-theme")
-				}
-
-				pointMeta := GetPointMeta(db, themeId)
-
-				homeForm := homeForm(pointMeta, *addressInfo, "")
-				homeForm.Render(GetContext(r), w)
+				warning := warning(fmt.Sprintf("Invalid addressType Request (fellthrough) %s", addressType))
+				warning.Render(GetContext(r), w)
 				return
+
 			}
 		case "DELETE":
 			idStr := r.URL.Query().Get("id")
@@ -1531,6 +1602,11 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 				return
 			}
 
+			switch pointType {
+			case "FractalAISearch":
+
+			}
+
 			cAddress := r.FormValue("displayName")
 			if len(cAddress) == 0 && len(title) > 0 {
 				cAddress = cleanAddress(title)
@@ -1538,7 +1614,6 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 
 			cSuburb := r.FormValue("suburb")
 
-			// Create a Home object with form data
 			home := Home{
 				Lat:          lat,
 				Lng:          lng,
@@ -1636,6 +1711,174 @@ func homeHandler(db *gorm.DB) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+func fractalSearchHandler(db *gorm.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "PUT":
+			idStr := chi.URLParam(r, "fractalSearchId")
+			id, err := strconv.Atoi(idStr)
+			if err != nil {
+				warning := warning(fmt.Sprintf("Invalid fractal search ID - %s", idStr))
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			fractalSearch, err := GetFractalSearch(db, uint(id))
+			if err != nil {
+				warning := warning(fmt.Sprintf("Failed to get fractal search - %s", err))
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			theme := GetActiveTheme(db, 0)
+			search, err := progressFractalGeoSearch(db, *fractalSearch, theme)
+			if err != nil {
+				warning := warning(fmt.Sprintf("Failed to progress fractal search - %s", err))
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			fSearchFrom := loadFractalSearchFull(search.ID)
+			fSearchFrom.Render(GetContext(r), w)
+			return
+
+		case "POST":
+			if err := r.ParseForm(); err != nil {
+				warning := warning("Could not parse form")
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			query := r.FormValue("query")
+			country := r.FormValue("country")
+			placeId := r.FormValue("placeId")
+			addressType := r.FormValue("addressType")
+			displayName := r.FormValue("displayName")
+			boundingBox1 := r.FormValue("boundingBox_0")
+			boundingBox2 := r.FormValue("boundingBox_1")
+			boundingBox3 := r.FormValue("boundingBox_2")
+			boundingBox4 := r.FormValue("boundingBox_3")
+
+			if len(query) == 0 {
+				warning := warning("No query provided")
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			boundingBox := []string{boundingBox1, boundingBox2, boundingBox3, boundingBox4}
+			boundingBoxFloat := make([]float64, len(boundingBox))
+			var err error
+			for i, v := range boundingBox {
+				if len(v) == 0 {
+					waring := warning(fmt.Sprintf("No boundingBox provided - %d", i))
+					waring.Render(GetContext(r), w)
+					return
+				}
+				boundingBoxFloat[i], err = strconv.ParseFloat(v, 64)
+				if err != nil {
+					warning := warning(fmt.Sprintf("Invalid boundingBox value - %s", v))
+					warning.Render(GetContext(r), w)
+					return
+				}
+			}
+
+			if len(boundingBox) != 4 {
+				warning := warning(fmt.Sprintf("No valid boundingBox provided - %s", boundingBox))
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			box := fmt.Sprintf("%s,%s,%s,%s", boundingBox1, boundingBox2, boundingBox3, boundingBox4)
+
+			nfr := FractalSearch{
+				AddressType: addressType,
+				Country:     country,
+				PlaceId:     placeId,
+				Query:       query,
+				DisplayName: displayName,
+				BoundingBox: box,
+				Status:      "pending",
+			}
+
+			fr, err := CreateFractalSearch(db, nfr)
+			if err != nil {
+				warning := warning(fmt.Sprintf("Failed to create fractal search - %v", err))
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			fSearchForm := loadFractalSearchFull(fr.ID)
+			fSearchForm.Render(GetContext(r), w)
+			return
+
+		case "GET":
+			idStr := chi.URLParam(r, "fractalSearchId")
+			if len(idStr) > 0 {
+				id, err := strconv.Atoi(idStr)
+				if err != nil {
+					warning := warning(fmt.Sprintf("Invalid fractal search ID - %s", idStr))
+					warning.Render(GetContext(r), w)
+					return
+				}
+				fsf, err := GetFractalSearchFull(db, uint(id))
+				if err != nil {
+					warning := warning(fmt.Sprintf("Failed to get fractal search - %v", err))
+					warning.Render(GetContext(r), w)
+					return
+				}
+
+				todayStr := getTodayStr()
+				fractalSearchFull := fractalSearchFull(*fsf, todayStr)
+				fractalSearchFull.Render(GetContext(r), w)
+				return
+			}
+
+			status := r.URL.Query().Get("status")
+			fSearches, err := GetFractalSearches(db, status)
+			if err != nil {
+				warning := warning(fmt.Sprintf("Failed to get fractial searches - %v", err))
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			fractalSearchList := fractalSearches(fSearches)
+			fractalSearchList.Render(GetContext(r), w)
+			return
+
+		case "DELETE":
+			idStr := chi.URLParam(r, "fractalSearchId")
+			if len(idStr) == 0 {
+				warning := warning("No fractal search ID provided")
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			id, err := strconv.Atoi(idStr)
+			if err != nil {
+				warning := warning(fmt.Sprintf("Invalid fractal search ID - %s", idStr))
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			fs, err := DeleteFractalSearch(db, uint(id))
+			if err != nil {
+				warning := warning(fmt.Sprintf("Failed to delete fractal search - %v", err))
+				warning.Render(GetContext(r), w)
+				return
+			}
+
+			log.Printf("Deleted fractal search %d", fs.ID)
+
+			loadFractalSearches := loadFractalSearches()
+			loadFractalSearches.Render(GetContext(r), w)
+			return
+
+		}
+
+	}
+
 }
 
 func homeUrlHandler(db *gorm.DB) http.HandlerFunc {

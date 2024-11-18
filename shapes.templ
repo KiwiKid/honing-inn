@@ -131,6 +131,23 @@ templ homeShape(h Home) {
     </span>
 }
 
+templ searchShape(fs FractalSearch) {
+    <span data-fs={ templ.JSONString(fs) }
+        data-bb1={ fmt.Sprintf("%d", fs.BoundingBox[0]) } 
+        data-bb2={ fmt.Sprintf("%d", fs.BoundingBox[1]) } 
+        data-bb3={ fmt.Sprintf("%d", fs.BoundingBox[2]) } 
+        data-bb4={ fmt.Sprintf("%d", fs.BoundingBox[3]) } 
+        data-fs-id={ fmt.Sprintf("%d", fs.ID) }>[searchShape] { templ.JSONString(fs.Query) }
+    </span>
+}
+
+templ searchResultShape(p Point){
+    <li data-point={ templ.JSONString(p) }>
+        <h3>{p.Title}</h3>
+        <p>{p.Description}</p>
+    </li>
+}
+
 templ imageOverlay(i ImageOverlay) {
     <span data-img-src={fmt.Sprintf("data:image/png;base64,%s", i.File)} data-img-url={ fmt.Sprintf("/images/%s", i.FileName) } data-img-overlay={ templ.JSONString(i)}></span>
 }

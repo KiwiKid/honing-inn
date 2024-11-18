@@ -293,3 +293,13 @@ templ editImageDescription(){
 templ navigateDescription(){
     <div>Navigate</div>
 }
+
+templ debug(title string, msg string){
+    <details>
+    <summary>{title}</summary>
+        <pre>
+    {msg}
+
+        </pre>
+    </details>
+}

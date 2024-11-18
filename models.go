@@ -15,10 +15,11 @@ type Factor struct {
 }
 
 type Theme struct {
-	ID                uint   `gorm:"primaryKey"`
-	Name              string `json:"name"`
-	Description       string `json:"description"`
-	StartSystemPrompt string `json:"start_system_prompt"`
+	ID                   uint   `gorm:"primaryKey"`
+	Name                 string `json:"name"`
+	Description          string `json:"description"`
+	StartSystemPrompt    string `json:"start_system_prompt"`
+	StartGeoSystemPrompt string `json:"start_geo_system_prompt"`
 }
 
 // Home represents a home with specific attributes.
@@ -91,6 +92,7 @@ type PointMeta struct {
 }
 
 type AddressInitInfo struct {
+	SearchTerm  string
 	Lat         string
 	Lng         string
 	Suburb      string
@@ -100,6 +102,59 @@ type AddressInitInfo struct {
 	Country     string
 	HouseNumber string
 	DisplayName string
+}
+
+type FractalAISearchInitInfo struct {
+	SearchTerm  string
+	DisplayName string
+	BoundingBox []float64
+	PlaceId     string
+	Country     string
+	AddressType string
+}
+
+type FractalSearch struct {
+	ID          uint      `gorm:"primaryKey"`
+	DisplayName string    `json:"display_name"`
+	Country     string    `json:"country"`
+	PlaceId     string    `json:"place_id"`
+	AddressType string    `json:"address_type"`
+	BoundingBox string    `json:"bounding_box"`
+	Query       string    `json:"query"`
+	Status      string    `json:"status"`
+	Messages    []Message `gorm:"type:jsonb" json:"messages"`
+}
+
+type FractalSearchFull struct {
+	FractalSearch
+	Points []Point
+}
+
+type Point struct {
+	ID              uint    `gorm:"primaryKey"`
+	Title           string  `gorm:"not null"`
+	Description     string  `gorm:"default:null"`
+	Lat             float64 `gorm:"default:null"`
+	Lng             float64 `gorm:"default:null"`
+	ThemeID         uint    `gorm:"default:null"`
+	FractalSearchID uint    `gorm:"default:null"`
+	PointType       string  `gorm:"default:null"`
+	Url             string  `gorm:"default:null"`
+	CleanAddress    string  `gorm:"default:null"`
+}
+
+type FractalSearchResult struct {
+	ID              uint     `gorm:"primaryKey"`
+	FractalSearchID uint     `json:"fractal_search_id"`
+	DisplayName     string   `json:"display_name"`
+	Query           string   `json:"query"`
+	PointTypeName   string   `json:"point_type_name"`
+	Points          []string `gorm:"type:jsonb" json:"points"`
+}
+
+type Message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
 }
 
 type ActionMode struct {
@@ -178,6 +233,7 @@ func GetPointMeta(db *gorm.DB, themeIDOverride uint) PointMeta {
 			{ID: 2, Name: "RedFlag"},
 			{ID: 3, Name: "Office"},
 			{ID: 4, Name: "LocationOfInterest"},
+			{ID: 5, Name: "FractalAISearch"},
 		},
 		icons: []PointIcons{
 			{ID: 1, Name: "Home"},
@@ -185,6 +241,7 @@ func GetPointMeta(db *gorm.DB, themeIDOverride uint) PointMeta {
 		},
 		factors: allFactors,
 		actionModes: []ActionMode{
+			{ID: 1, Key: "queries", Name: "Queries", Details: loadFractalSearches()},
 			{ID: 1, Key: "navigate", Name: "Navigate", Details: navigateDescription()},
 			{ID: 2, Key: "point", Name: "Add Points", Details: addPointsDescription()},
 			{ID: 3, Key: "existing-points", Name: "Existing Points", Details: pointListLoad(), FullPanel: true},

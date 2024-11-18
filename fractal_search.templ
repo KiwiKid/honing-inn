@@ -1,0 +1,96 @@
+package main
+
+import (
+    "fmt"
+)
+
+templ fractalSearchForm(info FractalAISearchInitInfo){
+    <div>
+        <form hx-post="/fractal">
+            <label>Query:<input type="text" name="query" style="width:100%"></input></label>
+            <h3>{info.DisplayName}</h3>
+            <input type="text" name="country" id="country" value={info.Country} />
+            <label>PlaceId:<input type="text"  name="placeId" id="placeId" value={info.PlaceId} /></label>
+            <input type="text" name="addressType" id="addressType" value={info.AddressType} />
+            <input type="text" name="displayName" id="displayName" value={info.DisplayName} />
+            <input type="text" name="boundingBox_0" id="boundingBox_0" value={fmt.Sprintf("%f", info.BoundingBox[0])} />
+            <input type="text" name="boundingBox_1" id="boundingBox_1" value={fmt.Sprintf("%f", info.BoundingBox[1])} />
+            <input type="text" name="boundingBox_2" id="boundingBox_2" value={fmt.Sprintf("%f", info.BoundingBox[2])} />
+            <input type="text" name="boundingBox_3" id="boundingBox_3" value={fmt.Sprintf("%f", info.BoundingBox[3])} />
+            <button type="submit">Search</button>
+        </form>
+    </div>
+}
+
+templ existingFractialSearch(search FractalSearch){
+    <div hx-get={fmt.Sprintf("/fractal/%d", search.ID)}>[[existingFractialSearch]]
+    <pre>
+        { fmt.Sprintf("%v", search) }
+    </pre>
+    </div>
+}
+
+templ loadFractalSearches(){
+    <div hx-get="/fractal" hx-trigger="revealed">
+        [[loadFractalSearches]]
+    </div>
+}
+
+templ fractalSearches(searches []FractalSearch){
+    <div id="fs-list">[fractalSearches]
+        if len(searches) == 0 {
+            <p>(search for an area above to get started)</p>
+        }
+        for _, search := range searches { 
+            <details>
+                <summary>{search.Query} in {search.DisplayName}</summary>
+                {fmt.Sprintf("%+v", search)}
+            </details>
+            <button hx-get={fmt.Sprintf("/fractal/%d", search.ID)} hx-target="#fs-list">{search.DisplayName}
+            </button>
+        }
+    </div>
+}
+
+templ loadFractalSearchFull(id uint){
+    <div hx-get={fmt.Sprintf("/fractal/%d", id)} hx-trigger="every 2s, revealed" hx-swap="outerHTML">
+        [loadFractalSearchFull]
+    </div>
+}
+
+templ fractalSearchFull(fsf FractalSearchFull, today string){
+
+    <div
+    if fsf.FractalSearch.Status == "pending" {
+        hx-get={fmt.Sprintf("/fractal/%d", fsf.FractalSearch.ID)} hx-trigger="every 60s"
+    }
+     hx-swap="outerHTML"
+     style="width: 300px; height: 40rem; overflow-y: auto; overflow-x: hidden; border: 1px solid #ccc; padding: 10px; box-sizing: border-box;"
+     id={fmt.Sprintf("fs-points-container-%d", fsf.FractalSearch.ID)}>
+
+         @searchShape(fsf.FractalSearch)
+
+        <div>
+            <ul>
+                for _, point := range fsf.Points {
+                @searchResultShape(point)
+            }
+            </ul>
+        </div>
+
+     {fmt.Sprintf("(%s updated %s)", fsf.FractalSearch.Status, today)}
+
+     <button hx-get="/fractal" hx-target="#fs-list">back</button>
+
+     <button hx-put={fmt.Sprintf("/fractal/%d", fsf.FractalSearch.ID)}>Progress</button>
+     <button hx-delete={fmt.Sprintf("/fractal/%d", fsf.FractalSearch.ID)} hx-target="#fs-list">clear</button>
+
+     [[fractalSearchFull]]
+    @debug(fsf.Query, fmt.Sprintf("%+v", fsf))
+
+
+    </div>
+}
+
+
+
