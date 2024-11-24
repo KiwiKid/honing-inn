@@ -36,8 +36,8 @@ func span() templ.Component {
 
 func mapActor() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_mapActor_44fc`,
-		Function: `function __templ_mapActor_44fc(){/**
+		Name: `__templ_mapActor_a8bd`,
+		Function: `function __templ_mapActor_a8bd(){/**
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Map} L 
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').Marker} L.Marker
  * @typedef {import('https://cdn.jsdelivr.net/npm/@types/leaflet/index.d.ts').LatLng} L.LatLng
@@ -151,6 +151,26 @@ getMap(){
       return this.map.getBounds()
     }
 
+    addPoints(fSearch, points){
+      const markerLayer = L.layerGroup();
+      
+      points.forEach(point => {
+        const { lat, lng, id } = point;
+
+
+      const popupHTML = ` + "`" + `<div hx-get="/points/${id}"  hx-trigger="revealed">loading point..</div>` + "`" + `;
+
+        // Create a marker for each point
+        const marker = L.marker([lat, lng])
+            .bindPopup(popupHTML, {minWidth: 500});
+
+            
+        markerLayer.addLayer(marker);
+      });
+
+      markerLayer.addTo(this.map);
+    }
+
     /**
      * 
      * @param southWest {L.LatLng}
@@ -167,6 +187,68 @@ getMap(){
       const imgBounds = document.getElementById('imgBounds');
       imgBounds.value = JSON.stringify(bounds)
     }
+
+    selectFractalSearch(fsId) {
+      const fsInfo = document.getElementById(` + "`" + `fs-points-container-${fsId}` + "`" + `);
+      if (!fsInfo) {
+          console.error("Fractal search info container not found");
+          return;
+      }
+
+      // Extract points from the container
+      const points = Array.from(fsInfo.querySelectorAll('[data-point]')).map((p) => {
+          const value = JSON.parse(p.attributes['data-point'].value);
+          return { lat: value.Lat, lng: value.Lng, id: value.ID };
+      });
+
+      if (points.length === 0) {
+          console.warn("No points found for the fractal search");
+          return;
+      }
+
+      // Initialize bounding box variables
+      let north = -Infinity,
+          south = Infinity,
+          east = -Infinity,
+          west = Infinity;
+
+      // Compute the bounds
+      points.forEach((p) => {
+          // Ensure lat and lng values are valid numbers
+           if (
+            typeof p.lat === 'number' && p.lat !== 0 &&
+            typeof p.lng === 'number' && p.lng !== 0
+        ) {
+              if (p.lat > north) north = p.lat;
+              if (p.lat < south) south = p.lat;
+              if (p.lng > east) east = p.lng;
+              if (p.lng < west) west = p.lng;
+          } else {
+              console.warn("Invalid point:", p);
+          }
+      });
+
+      // Check for invalid bounds (e.g., when points are improperly parsed)
+      if (!isFinite(north) || !isFinite(south) || !isFinite(east) || !isFinite(west)) {
+          console.error("Failed to calculate valid bounds from points:", points);
+          return;
+      }
+
+      // Create Leaflet bounds
+      const bounds = L.latLngBounds(
+          L.latLng(south, west), // South-West
+          L.latLng(north, east)  // North-East
+      );
+
+          console.log('BOUNDS to move to')
+          console.log(JSON.stringify(bounds))
+
+
+         const searchInfo = JSON.parse(fsInfo.attributes['data-fsearch'].value)
+
+        window.mapActor.addPoints(searchInfo, points); // Add points to the map
+        window.mapActor.map.fitBounds(bounds); // Fit the map to the bounds
+  }
 
     setNewImageOverlayOpacity(opacity){
       const imgOpacity = document.getElementById('imgOpacity');
@@ -281,6 +363,7 @@ getMap(){
         window.mapActor = this;
 
 
+
        L.Control.geocoder({
         defaultMarkGeocode: false,
         collapsed: false,
@@ -305,6 +388,8 @@ getMap(){
           'boundingBox': e.geocode.properties.boundingbox
         })
 
+
+
         var bbox = e.geocode.bbox;  
         var poly = L.polygon([
           bbox.getSouthEast(),
@@ -312,7 +397,10 @@ getMap(){
           bbox.getNorthWest(),
           bbox.getSouthWest()
         ]).addTo(window.mapActor.map);
-          
+                  
+        console.log('BOUNDS BEFORE')
+        console.log(poly.getBounds())
+
           window.mapActor.map.fitBounds(poly.getBounds());
         })
         .addTo(window.mapActor.map);
@@ -545,12 +633,24 @@ getMap(){
       }
   }
 
+
+isControlClick = (element) => {
+    while (element) {
+        if (element.classList && element.classList.contains('controls')) {
+            return true;
+        }
+        element = element.parentElement;
+    }
+    return false;
+};
+
 handleMapClick(event, map){
     const { latlng } = event;
     console.log(` + "`" + `map click ${latlng}` + "`" + `)
     
-    const isControlClick = event.originalEvent.target.parentElement.classList.contains('controls')
-    if(isControlClick){
+    const thisIsControlClick = this.isControlClick(event.originalEvent.target)
+    if(thisIsControlClick){
+        console.log('(controls click)')
         return
     }
     let mode = window.mapActor.mode
@@ -658,39 +758,39 @@ handleMapMoveEnd(e){
 
 
   addCustomControls() {
-    const CustomControl = L.Control.extend({
+    const MainLeftControls = L.Control.extend({
       options: {
         position: 'topleft'
       },
 
       onAdd: (map) => {
-        // Create a div element with the 'custom-control' class
-        const controlDiv = L.DomUtil.create('div', 'custom-control');
-        L.DomEvent.on(controlDiv, 'mousewheel', L.DomEvent.stopPropagation);
-        controlDiv.innerHTML = ` + "`" + `<div hx-get="/controls" hx-trigger="every 1s" hx-swap="outerHTML">loading..</div>` + "`" + `
-        htmx.process(controlDiv)
+        const controlDiv = L.DomUtil.create('div', 'custom-controls');
+        controlDiv.innerHTML = ` + "`" + `<div hx-get="/controls" hx-trigger="revealed, every 1s" hx-swap="outerHTML">loading ()..</div>` + "`" + `
+       htmx.process(controlDiv)
 
+        L.DomEvent.disableScrollPropagation(controlDiv);
+        L.DomEvent.disableClickPropagation(controlDiv);
 
         return controlDiv;
       },
     });
 
     // Add the custom control to the map
-    this.map.addControl(new CustomControl());
+    this.map.addControl(new MainLeftControls());
 
-    const ChatControl = L.Control.extend({
+    const BottomRightControls = L.Control.extend({
       options: {
         position: 'bottomright'
       },
 
       onAdd: (map) => {
-        // Create a div element with the 'custom-control' class
-        const controlDiv = L.DomUtil.create('div', 'custom-control');
+        const controlDiv = L.DomUtil.create('div', 'custom-controls');
         controlDiv.style.width = '400px';
-        controlDiv.style.height = '600px';
-        L.DomEvent.on(controlDiv, 'mousewheel', L.DomEvent.stopPropagation);
-        //controlDiv.innerHTML = ` + "`" + `<div hx-get="/chatlist?themeId=1" hx-trigger="every 1s" style="height: 800px; width: 800px;" hx-swap="outerHTML">loading chatlist..</div>` + "`" + `
+        controlDiv.style.height = '200px';
         controlDiv.innerHTML = ` + "`" + `<div hx-swap="outerHTML"><div id="chat-box">(select a home to get started)         <a href="/mapmanager" target="_">manage</a></div></div>` + "`" + `
+
+        L.DomEvent.disableScrollPropagation(controlDiv);
+        L.DomEvent.disableClickPropagation(controlDiv);
 
         htmx.process(controlDiv)
 
@@ -699,7 +799,7 @@ handleMapMoveEnd(e){
       
     })
 
-    this.map.addControl(new ChatControl());
+    this.map.addControl(new BottomRightControls());
 
   }
   
@@ -726,11 +826,13 @@ handleMapMoveEnd(e){
         const modeDetails = document.querySelectorAll('.mode-details')
         modeDetails.forEach((el) => {
           el.style.display = 'none'
+          el.classList.remove("nav-btn-selected")
         })
 
         const buttons = document.querySelectorAll('button[data-action-mode-key]')
         buttons.forEach((el) => {
-          el.style.backgroundColor = 'white'
+          el.style.backgroundColor = '#3b82f6'
+          el.classList.add("nav-btn-selected")
         })
 
 
@@ -743,6 +845,7 @@ handleMapMoveEnd(e){
 
         const modeBtn = document.querySelector(` + "`" + `button[data-action-mode-key="${newMode}"]` + "`" + `)
         modeBtn.style.backgroundColor = '#A9A9A9'
+        modeBtn.classList.add("nav-btn-selected")
         window.mapActor.mode = newMode;      
 
       } else {
@@ -1042,35 +1145,43 @@ handleMapMoveEnd(e){
 
           document.querySelectorAll('span[data-img-overlay]').forEach(function(element){
               if (element.getAttribute('rendered') !== 'true') {
-                const imgElem = JSON.parse(element.getAttribute('data-img-overlay'))
-              //  const imgData = element.getAttribute('data-img-src');
-                const imageUrl = element.getAttribute('data-img-url');
+                try { 
+                  const imgElem = JSON.parse(element.getAttribute('data-img-overlay'))
+                //  const imgData = element.getAttribute('data-img-src');
+                  const imageUrl = element.getAttribute('data-img-url');
 
-                if(imgElem.fileInput.length == 0){
-                    console.error('No image file found')
-                    return
-                }
+                  if(imgElem.fileInput.length == 0){
+                      console.error('No image file found')
+                      return
+                  }
 
-                let imgBounds = imgElem.imgBounds
-                if(imgBounds.length == 0){
-                  imgBounds = window.mapActor.map.getBounds()
-                }else{
-                  imgBounds = JSON.parse(imgBounds);
-                }
-              
-              const bounds = L.latLngBounds(
-                  L.latLng(imgBounds._southWest.lat, imgBounds._southWest.lng),
-                  L.latLng(imgBounds._northEast.lat, imgBounds._northEast.lng)
-              );
+                  let imgBounds = imgElem.imgBounds
+                  if(imgBounds.length == 0){
+                    imgBounds = window.mapActor.map.getBounds()
+                  }else{
+                    imgBounds = JSON.parse(imgBounds);
+                  }
+                
+                const bounds = L.latLngBounds(
+                    L.latLng(imgBounds._southWest.lat, imgBounds._southWest.lng),
+                    L.latLng(imgBounds._northEast.lat, imgBounds._northEast.lng)
+                );
+                  
 
-             /* if (!imgData.startsWith('data:image/png;base64,')) {
-                console.error('The base64 string does not start with the correct prefix.');
-                return
-            }*/
-                const overlay = L.imageOverlay(imageUrl, bounds, {opacity: imgElem.opacity ? imgElem.opacity : 1})
-                window.mapActor.addImageOverLay(overlay, imgElem.name)
+              /* if (!imgData.startsWith('data:image/png;base64,')) {
+                  console.error('The base64 string does not start with the correct prefix.');
+                  return
+              }*/
+                  const overlay = L.imageOverlay(imageUrl, bounds, {opacity: imgElem.opacity ? imgElem.opacity : 1})
+                  window.mapActor.addImageOverLay(overlay, imgElem.name)
 
-                element.setAttribute('rendered', 'true');
+                  element.setAttribute('rendered', 'true');
+
+                  }catch(err){
+                    console.error('Failed to render image', {
+                      err
+                    })
+                  }
 
               }
           })
@@ -1140,7 +1251,6 @@ handleMapMoveEnd(e){
             }
           }
       
-          // Calculate the new center for the next grid cell based on map bounds
           const bounds = window.mapActor.getBounds();
           const latDelta = bounds.getNorth() - bounds.getSouth();
           const lngDelta = bounds.getEast() - bounds.getWest();
@@ -1148,7 +1258,7 @@ handleMapMoveEnd(e){
           const newLat = bounds.getSouth() + currentRow * latDelta;
           const newLng = bounds.getWest() + currentCol * lngDelta;
       
-          map.setView([newLat, newLng], mapProcessingMeta.zoom);  // Trigger the 'moveend' event
+          map.setView([newLat, newLng], mapProcessingMeta.zoom);
         };
       
         // Event listener for when the map finishes moving
@@ -1244,7 +1354,7 @@ handleMapMoveEnd(e){
   
       
 }`,
-		Call:       templ.SafeScript(`__templ_mapActor_44fc`),
-		CallInline: templ.SafeScriptInline(`__templ_mapActor_44fc`),
+		Call:       templ.SafeScript(`__templ_mapActor_a8bd`),
+		CallInline: templ.SafeScriptInline(`__templ_mapActor_a8bd`),
 	}
 }

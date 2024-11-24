@@ -6,20 +6,25 @@ import (
 
 templ fractalSearchForm(info FractalAISearchInitInfo){
     <div>
-        <form hx-post="/fractal">
+        <form hx-post="/fractal" class="form-container">
             <label>Query:<input type="text" name="query" style="width:100%"></input></label>
             <h3>{info.DisplayName}</h3>
             <input type="text" name="country" id="country" value={info.Country} />
             <label>PlaceId:<input type="text"  name="placeId" id="placeId" value={info.PlaceId} /></label>
             <input type="text" name="addressType" id="addressType" value={info.AddressType} />
             <input type="text" name="displayName" id="displayName" value={info.DisplayName} />
-            <input type="text" name="boundingBox_0" id="boundingBox_0" value={fmt.Sprintf("%f", info.BoundingBox[0])} />
-            <input type="text" name="boundingBox_1" id="boundingBox_1" value={fmt.Sprintf("%f", info.BoundingBox[1])} />
-            <input type="text" name="boundingBox_2" id="boundingBox_2" value={fmt.Sprintf("%f", info.BoundingBox[2])} />
-            <input type="text" name="boundingBox_3" id="boundingBox_3" value={fmt.Sprintf("%f", info.BoundingBox[3])} />
             <button type="submit">Search</button>
         </form>
     </div>
+}
+
+templ fractalSearchCreateFormV2(){
+     <form hx-post="/fractal" hx-target="#fs-list" hx-swap="outerHTML" class="form-container">
+        <input type="hidden" name="fType" value="quick"/>
+        <label>Query:<input type="text" name="query" style="width:100%"></input></label>
+        
+        <button type="submit">Search</button>
+    </form>
 }
 
 templ existingFractialSearch(search FractalSearch){
@@ -30,27 +35,45 @@ templ existingFractialSearch(search FractalSearch){
     </div>
 }
 
-templ loadFractalSearches(){
-    <div hx-get="/fractal" hx-trigger="revealed">
-        [[loadFractalSearches]]
-    </div>
+templ loadFractalSearches(id uint){
+    if id > 0 {
+        <div hx-get={fmt.Sprintf("/fractal/%d", id)} hx-trigger="revealed" hx-swap="outerHTML">
+            [[loadFractalSearches]]
+        </div>
+    } else {
+        <div hx-get="/fractal" hx-trigger="revealed" id="fractal-search" hx-swap="outerHTML">
+            [[loadFractalSearches]]
+        </div>
+    }
+    
 }
 
 templ fractalSearches(searches []FractalSearch){
-    <div id="fs-list">[fractalSearches]
+    <div id="fs-list" hx-target="this" class="controls">[fractalSearches]
+        @fractalSearchCreateFormV2()
         if len(searches) == 0 {
             <p>(search for an area above to get started)</p>
         }
         for _, search := range searches { 
+            <button hx-get={fmt.Sprintf("/fractal/%d", search.ID)} hx-target="#fs-list" hx-swap="outerHTML">{search.Query}
+            </button>
             <details>
-                <summary>{search.Query} in {search.DisplayName}</summary>
+                <summary>(debug)</summary>
                 {fmt.Sprintf("%+v", search)}
             </details>
-            <button hx-get={fmt.Sprintf("/fractal/%d", search.ID)} hx-target="#fs-list">{search.DisplayName}
-            </button>
         }
     </div>
 }
+
+
+
+templ fractalSearchFullNav(fsf FractalSearchFull, today string){
+
+    <button hx-get="/fractal" hx-target="#fs-list" hx-swap="outerHTML">back</button>
+
+}
+
+
 
 templ loadFractalSearchFull(id uint){
     <div hx-get={fmt.Sprintf("/fractal/%d", id)} hx-trigger="every 2s, revealed" hx-swap="outerHTML">
@@ -59,38 +82,111 @@ templ loadFractalSearchFull(id uint){
 }
 
 templ fractalSearchFull(fsf FractalSearchFull, today string){
-
-    <div
-    if fsf.FractalSearch.Status == "pending" {
-        hx-get={fmt.Sprintf("/fractal/%d", fsf.FractalSearch.ID)} hx-trigger="every 60s"
-    }
-     hx-swap="outerHTML"
-     style="width: 300px; height: 40rem; overflow-y: auto; overflow-x: hidden; border: 1px solid #ccc; padding: 10px; box-sizing: border-box;"
-     id={fmt.Sprintf("fs-points-container-%d", fsf.FractalSearch.ID)}>
-
-         @searchShape(fsf.FractalSearch)
-
-        <div>
-            <ul>
-                for _, point := range fsf.Points {
-                @searchResultShape(point)
-            }
-            </ul>
-        </div>
-
-     {fmt.Sprintf("(%s updated %s)", fsf.FractalSearch.Status, today)}
-
-     <button hx-get="/fractal" hx-target="#fs-list">back</button>
-
-     <button hx-put={fmt.Sprintf("/fractal/%d", fsf.FractalSearch.ID)}>Progress</button>
-     <button hx-delete={fmt.Sprintf("/fractal/%d", fsf.FractalSearch.ID)} hx-target="#fs-list">clear</button>
-
-     [[fractalSearchFull]]
-    @debug(fsf.Query, fmt.Sprintf("%+v", fsf))
-
-
+    <div id="fs-list" hx-target="this" class="controls custom-controls">
+        <div
+        hx-swap="outerHTML"
+        id={fmt.Sprintf("fs-points-container-%d", fsf.FractalSearch.ID)}
+        data-fsearch={templ.JSONString(fsf.FractalSearch)}
+        >
+        @fractalSearchFullContent(fsf, today)
+        [fractalSearchFull]
+        
+    </div>
     </div>
 }
 
+
+templ fractalSearchFullWithConfig(fsf FractalSearchFull, today string, config PromptConfig){
+    <div id="fs-list" class="controls-wide custom-controls">
+        <div
+            hx-swap="outerHTML"
+            id={fmt.Sprintf("fs-points-container-%d", fsf.FractalSearch.ID)}
+            data-fsearch={templ.JSONString(fsf.FractalSearch)}
+            >
+            [fractalSearchFullWithConfig]
+            {fmt.Sprintf("(%s updated %s)", fsf.FractalSearch.Status, today)}
+
+            @fractalSearchConfig(config)
+            @fractalSearchFullContent(fsf, today) 
+        </div>
+    </div>
+
+}
+
+templ fractalSearchFullContent(fsf FractalSearchFull, today string){
+    [fractalSearchFullContent]
+    @fractalSearchFullNav(fsf, today)
+    <form hx-put={fmt.Sprintf("/fractal/%d", fsf.FractalSearch.ID)} hx-swap="outerHTML" class="form-container">
+        <label>dryRun:<input type="checkbox" name="dryRun" class="search-field"/></label>
+        <button type="submit">Generate List</button>
+    </form>
+    <form hx-put={fmt.Sprintf("/fractal/%d/locations", fsf.FractalSearch.ID)} hx-swap="outerHTML" class="form-container">
+        <button type="submit">Place Lookup</button>
+    </form>
+
+    @searchShape(fsf.FractalSearch)
+
+    <div class="search-result">
+        for _, point := range fsf.Points {
+            @searchResultShape(point)
+        }
+    </div>
+    <button hx-delete={fmt.Sprintf("/fractal/%d/results", fsf.FractalSearch.ID)}  hx-target="#fs-list" hx-swap="outerHTML">clear results</button>
+    <button hx-delete={fmt.Sprintf("/fractal/%d", fsf.FractalSearch.ID)}  hx-target="#fs-list" hx-swap="outerHTML">delete</button>
+    @fractalSearchFullNav(fsf, today)
+
+    [[fractalSearchFull]]
+    @debug(fsf.Query, fmt.Sprintf("%+v", fsf))
+    {fmt.Sprintf("%d points, %d messages", len(fsf.Messages), len(fsf.Points))}
+
+    <script data-fs-id={fmt.Sprintf("%d", fsf.FractalSearch.ID)}>
+        window.mapActor.selectFractalSearch(document.currentScript.getAttribute('data-fs-id'));
+    </script>
+}
+
+
+templ fractalSearchPointPopup(point Point){
+    <div class="flex space-x-4">
+        <div>{fmt.Sprintf("ID: %v", point.ID)}</div>
+        <div>{fmt.Sprintf("Title: %v", point.Title)}</div>
+        <div>{fmt.Sprintf("Description: %v", point.Description)}</div>
+        <div>{fmt.Sprintf("Lat: %v", point.Lat)}</div>
+        <div>{fmt.Sprintf("Lng: %v", point.Lng)}</div>
+        <div>{fmt.Sprintf("ThemeID: %v", point.ThemeID)}</div>
+        <div>{fmt.Sprintf("FractalSearchID: %v", point.FractalSearchID)}</div>
+        <div>{fmt.Sprintf("FractalSearchResultGroupID: %v", point.FractalSearchResultGroupID)}</div>
+        <div>PointType:  {point.PointType}</div>
+        <div>{fmt.Sprintf("Url: %v", point.Url)}</div>
+        <div>{fmt.Sprintf("CleanAddress: %v", point.CleanAddress)}</div>
+        <div>{fmt.Sprintf("WarningMessage: %v", point.WarningMessage)}</div>
+        @debug("point", fmt.Sprintf("%+v", point))
+        <button type="button" class="form-button bg-gray-500 hover:bg-gray-600" onclick="location.reload();">Cancel</button>
+    </div>
+    
+}
+
+templ fractalSearchConfig(config PromptConfig){
+    <div>
+        if config.DryRun {
+            <div>DRY RUN</div>
+        }
+        if len(config.StartSystemPrompt) > 0 {
+            @debug("StartSystemPrompt", config.StartSystemPrompt)
+        }
+
+        if len(config.UserPrompt) > 0 {
+             @debug("UserPrompt", config.UserPrompt)
+            <div>{config.UserPrompt}</div>
+        }
+        
+        @debug("fractalSearchConfig", fmt.Sprintf("%+v", config))
+
+
+        for i, msg := range config.Messages {
+            @debug(fmt.Sprintf("Message %d", i), fmt.Sprintf("%+v", msg))
+
+        }
+    </div>
+}
 
 

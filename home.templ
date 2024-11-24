@@ -5,7 +5,7 @@ import (
     "github.com/dustin/go-humanize"
 )
 templ pointListLoad(){
-    <div hx-get="/homes?viewMode=list" hx-trigger="visible">loading points...</div>
+    <div hx-get="/homes?viewMode=list" hx-trigger="revealed">loading points...</div>
 }
 
 
@@ -195,7 +195,7 @@ templ urlInput(url string, title string, oob bool, failedMsg string){
         } else if len(title) == 0 {
             @pending()
         } else {
-            @tick(fmt.Sprintf("got title - %s", urlInput))
+            @tick(fmt.Sprintf("got title - %s", url))
         } 
         
             <label for="url" class="block text-sm font-medium text-gray-700 form-label">

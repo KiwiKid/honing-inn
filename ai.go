@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"regexp"
@@ -33,8 +34,15 @@ type PerplexityRequest struct {
 	FrequencyPenalty       float64   `json:"frequency_penalty"`
 }
 
+type Error struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Type    string `json:"type"`
+}
+
 // ErrorResponse represents the error structure returned by the API
 type ErrorResponse struct {
+	Error  Error
 	Detail []ErrorDetail `json:"detail"`
 }
 
@@ -68,13 +76,14 @@ type Usage struct {
 
 type PerplexitySuccessResponse struct {
 	Choices []Choice
-	Rating  int
+	config  PromptConfig
 	prompt  string
 }
 
 type PerplexityResult struct {
 	SuccessResults PerplexitySuccessResponse
 	ErrorMessage   string
+	config         PromptConfig
 }
 
 type RunSettings struct {
@@ -89,9 +98,10 @@ func cleanAddress(address string) string {
 
 func getReplacements(home Home, addressType string, chatType ChatType) map[string]string {
 	return map[string]string{
-		"{address}": home.CleanAddress,
-		"{suburb}":  home.CleanSuburb,
-		"{topic}":   chatType.Name,
+		"{address}":     home.CleanAddress,
+		"{suburb}":      home.CleanSuburb,
+		"{addressType}": addressType,
+		"{topic}":       chatType.Name,
 	}
 }
 
@@ -150,17 +160,18 @@ func buildPromptConfig(home Home, chatType ChatType, theme Theme) PromptConfig {
 		StartSystemPrompt: startSystemPrompt,
 		UserPrompt:        chatType.Prompt,
 		Replacements:      replacements,
-		ExistingMessages:  []Message{},
+		Messages:          []Message{},
 	}
 
 }
 
 type PromptConfig struct {
 	Token             string
+	DryRun            bool
 	StartSystemPrompt string
 	UserPrompt        string
 	Replacements      map[string]string
-	ExistingMessages  []Message
+	Messages          []Message
 }
 
 func callPerplexityAPI(config PromptConfig) (PerplexityResult, error) {
@@ -174,22 +185,6 @@ func callPerplexityAPI(config PromptConfig) (PerplexityResult, error) {
 		MaxTokens: 512,
 	}
 
-	var prompt string = config.UserPrompt
-	for key, value := range config.Replacements {
-		prompt = strings.Replace(prompt, key, value, -1)
-		log.Printf("After replacement (%s|%s): %s", key, value, prompt)
-	}
-
-	messages := []Message{}
-	if len(config.ExistingMessages) > 0 {
-		messages = append(config.ExistingMessages, Message{Role: "user", Content: prompt})
-	} else {
-		messages = []Message{
-			{Role: "system", Content: config.StartSystemPrompt},
-			{Role: "user", Content: prompt},
-		}
-	}
-
 	// Construct the Perplexity API request body
 	/*
 		llama-3.1-sonar-small-128k-online (8B parameters)
@@ -197,8 +192,8 @@ func callPerplexityAPI(config PromptConfig) (PerplexityResult, error) {
 		llama-3.1-sonar-huge-128k-online (405B parameters)
 	*/
 	reqBody := PerplexityRequest{
-		Model:                  "llama-3.1-sonar-small-128k-online",
-		Messages:               messages,
+		Model:                  "llama-3.1-sonar-large-128k-online",
+		Messages:               config.Messages,
 		MaxTokens:              runSettings.MaxTokens,
 		Temperature:            0.2,
 		TopP:                   0.9,
@@ -215,31 +210,38 @@ func callPerplexityAPI(config PromptConfig) (PerplexityResult, error) {
 	// Convert the struct to JSON
 	reqBodyBytes, err := json.Marshal(reqBody)
 	if err != nil {
-		return PerplexityResult{ErrorMessage: "Failed to marshal request body"}, err
+		return PerplexityResult{ErrorMessage: "Failed to marshal request body", config: config}, err
 	}
 
 	// Create a new POST request
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBodyBytes))
 	if err != nil {
-		return PerplexityResult{ErrorMessage: "Failed to create request"}, err
+		return PerplexityResult{ErrorMessage: "Failed to create request", config: config}, err
 	}
 
 	// Set headers for the API call
 	req.Header.Set("Authorization", "Bearer "+config.Token)
 	req.Header.Set("Content-Type", "application/json")
 
+	if config.DryRun {
+		return PerplexityResult{
+			config:         config,
+			SuccessResults: PerplexitySuccessResponse{},
+		}, nil
+	}
+
 	// Send the request
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return PerplexityResult{ErrorMessage: "Failed to call API"}, err
+		return PerplexityResult{ErrorMessage: "Failed to call API", config: config}, err
 	}
 	defer resp.Body.Close()
 
 	// Read the response body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return PerplexityResult{ErrorMessage: "Failed to read response body"}, err
+		return PerplexityResult{ErrorMessage: "Failed to read response body", config: config}, err
 	}
 
 	// Check for HTTP errors
@@ -247,34 +249,34 @@ func callPerplexityAPI(config PromptConfig) (PerplexityResult, error) {
 		// Try to unmarshal into ErrorResponse
 		var errResp ErrorResponse
 		if err := json.Unmarshal(body, &errResp); err != nil {
-			return PerplexityResult{ErrorMessage: "Failed to unmarshal error response"}, err
+			return PerplexityResult{ErrorMessage: "Failed to unmarshal error response", config: config}, err
 		}
 
-		log.Printf("\n\n====Response: %+v\n\n", body)
+		log.Printf("\n\n====Response: %+v\n\n", errResp)
+
+		if len(errResp.Detail) == 0 {
+			msg := fmt.Sprintf("API error %d - %v", resp.StatusCode, errResp)
+			return PerplexityResult{ErrorMessage: msg, config: config}, fmt.Errorf(msg)
+		}
 
 		// Extract error details and return them
-		return PerplexityResult{ErrorMessage: errResp.Detail[0].Msg}, fmt.Errorf("API error: %s", errResp.Detail[0].Msg)
+		return PerplexityResult{ErrorMessage: errResp.Detail[0].Msg, config: config}, fmt.Errorf("API error: %s", errResp.Detail[0].Msg)
 	}
 
 	// Try to unmarshal into SuccessResponse
 	var successResp SuccessResponse
 	if err := json.Unmarshal(body, &successResp); err != nil {
-		return PerplexityResult{ErrorMessage: "Failed to unmarshal success response"}, err
+		return PerplexityResult{ErrorMessage: "Failed to unmarshal success response", config: config}, err
 	}
 
 	// log.Printf("\n\n====Response: %+v\n\n", body)
-
-	rating := extractRating(successResp.Choices[0].Message.Content)
-
-	log.Printf("extractRating returned: %d", rating)
 
 	// Return the content of the assistant's message
 	if len(successResp.Choices) > 0 {
 		return PerplexityResult{
 			SuccessResults: PerplexitySuccessResponse{
 				Choices: successResp.Choices,
-				Rating:  rating,
-				prompt:  prompt,
+				config:  config,
 			},
 		}, nil
 	}
@@ -292,31 +294,42 @@ func buildChat(response PerplexityResult, home Home, chatType ChatType) Chat {
 		})
 	}
 
+	msg := response.SuccessResults.Choices[len(response.SuccessResults.Choices)-1].Message
+
+	rating := extractRating(msg.Content)
+
 	return Chat{
 		HomeID:        home.ID,
 		ChatTypeTitle: chatType.Name,
 		ChatType:      uint(chatType.ID),
 		ThemeID:       uint(chatType.ThemeID),
 		Results:       chatResults,
-		Rating:        response.SuccessResults.Rating,
+		Rating:        rating,
 		Prompt:        response.SuccessResults.prompt,
 	}
 }
-func parseFractalSearchResult(response PerplexityResult, fs FractalSearch) ([]FractalSearchResult, bool, error) {
+
+type FractalSearchParseResult struct {
+	FractalSearchID uint
+	DisplayName     string
+	PointTypeName   string
+	IsComplete      bool
+	Points          []Point
+}
+
+func parseFractalSearchResult(response PerplexityResult, fs FractalSearch) ([]FractalSearchParseResult, error) {
 	if len(response.SuccessResults.Choices) == 0 {
-		return nil, true, errors.New("no choices returned in the response")
+		return nil, errors.New("no choices returned in the response")
 	}
 
+	log.Printf("parseFractalSearchResult: %+v", response)
 	// Extract the message from the last choice
 	msg := response.SuccessResults.Choices[len(response.SuccessResults.Choices)-1].Message
-	fs.Messages = append(fs.Messages, msg)
 
 	// Split message content into lines
 	lines := strings.Split(msg.Content, "\n")
-	var results []FractalSearchResult
-	var currentResult *FractalSearchResult
-	var isComplete bool
-
+	var results []FractalSearchParseResult
+	var currentResult *FractalSearchParseResult
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
@@ -329,19 +342,34 @@ func parseFractalSearchResult(response PerplexityResult, fs FractalSearch) ([]Fr
 			if currentResult != nil {
 				results = append(results, *currentResult)
 			}
-			currentResult = &FractalSearchResult{
+			currentResult = &FractalSearchParseResult{
 				FractalSearchID: fs.ID,
 				DisplayName:     strings.TrimPrefix(line, "# "),
-				Points:          []string{},
+				PointTypeName:   "main",
+				Points:          []Point{},
 			}
 		} else if strings.HasPrefix(line, "-") {
-			// List item (add to Points)
-			if currentResult != nil {
-				currentResult.Points = append(currentResult.Points, strings.TrimPrefix(line, "- "))
+
+			var title string
+			var description string
+			fullLine := strings.TrimPrefix(line, "- ")
+			lintParts := strings.Split(fullLine, " - ")
+			if len(lintParts) != 2 {
+				title = fullLine
+			} else {
+				title = lintParts[0]
+				description = lintParts[1]
 			}
-		} else if line == "LIST IS COMPLETE" {
-			// Completion indicator
-			isComplete = true
+
+			if currentResult != nil {
+				point := &Point{
+					ThemeID:     fs.ThemeID,
+					Title:       title,
+					Description: description,
+					PointType:   currentResult.PointTypeName,
+				}
+				currentResult.Points = append(currentResult.Points, *point)
+			}
 		}
 	}
 
@@ -349,63 +377,208 @@ func parseFractalSearchResult(response PerplexityResult, fs FractalSearch) ([]Fr
 		results = append(results, *currentResult)
 	}
 
-	return results, isComplete, nil
+	return results, nil
 }
 
-func progressFractalGeoSearch(db *gorm.DB, fs FractalSearch, theme Theme) (FractalSearch, error) {
+func progressFractalGeoSearch(db *gorm.DB, fs FractalSearch, existingMessages []Message, theme Theme, request FractalSearchRequest) (FractalSearch, PromptConfig, error) {
 
-	promptConfig := buildGeoPromptConfig(fs, theme)
+	log.Printf("progressFractalGeoSearch %d messages", len(existingMessages))
+	promptConfig := buildGeoPromptConfig(fs, existingMessages, theme, request.dryRun)
 	response, err := callPerplexityAPI(promptConfig)
 	if err != nil {
-		return fs, err
+		return fs, promptConfig, err
 	}
 
-	log.Printf("progress Fractal search: %+v", response)
-	msg := response.SuccessResults.Choices[len(response.SuccessResults.Choices)-1].Message
-	fs.Messages = append(fs.Messages, msg)
+	if request.dryRun {
+		return fs, promptConfig, nil
+	}
 
-	searchResult, isComplete, err := parseFractalSearchResult(response, fs)
+	log.Printf("❤️ progress Fractal search: response.SuccessResults.Choices:%d", len(response.SuccessResults.Choices))
+
+	mewMsg := response.SuccessResults.Choices[len(response.SuccessResults.Choices)-1].Message
+
+	newMsg, err := CreateMessage(db, Message{
+		Role:            mewMsg.Role,
+		Content:         mewMsg.Content,
+		FractalSearchID: fs.ID,
+	})
+
+	log.Printf("Saved msg with length %d", len(newMsg.Content))
+
+	searchResult, err := parseFractalSearchResult(response, fs)
 	if err != nil {
-		return fs, err
+		return fs, promptConfig, err
 	}
+
+	log.Printf("Saving Search Results %d", len(searchResult))
 
 	var points []Point
 	for _, result := range searchResult {
+		newGroup, err := CreateFractalSearchResultGroup(db, FractalSearchResultGroup{
+			FractalSearchID: fs.ID,
+			DisplayName:     result.DisplayName,
+			PointTypeName:   result.PointTypeName,
+		})
+		if err != nil {
+			return fs, promptConfig, err
+		}
+
+		log.Printf("Saving Search Results - Points %d", len(result.Points))
 		for _, point := range result.Points {
-			point, err := CreatePoint(db, Point{
-				ThemeID:         theme.ID,
-				Title:           point,
-				PointType:       result.PointTypeName,
-				FractalSearchID: fs.ID,
-			})
+			point.ThemeID = fs.ThemeID
+			point.FractalSearchID = fs.ID
+			point.FractalSearchResultGroupID = newGroup.ID
+
+			point, err := CreatePoint(db, point)
 			if err != nil {
-				return fs, err
+				return fs, promptConfig, err
 			}
 			points = append(points, *point)
 		}
 	}
 
-	if isComplete {
-		fs.Status = "complete"
-	} else {
-		fs.Status = "in-progress"
+	err = db.Save(&fs).Error
+	if err != nil {
+		return fs, promptConfig, err
 	}
-
-	return fs, nil
+	return fs, promptConfig, nil
 
 }
+func placeFractalSearchPoints(db *gorm.DB, fs FractalSearchFull, osmClient *osmClient) []Point {
+	var points []Point
+	var totalLat, totalLng float64
+	var processedPoints int
 
-func buildGeoPromptConfig(fs FractalSearch, theme Theme) PromptConfig {
+	// Helper function to safely parse coordinates
+	parseCoord := func(coord string) float64 {
+		val, _ := strconv.ParseFloat(coord, 64)
+		return val
+	}
 
-	replacements := getGeoReplacements(fs)
+	// Helper function to perform geocoding with a lookup string
+	geocode := func(lookupStr string) ([]GeocodeResult, error) {
+		geoRes, err := osmClient.GeocodeAddress(lookupStr)
+		if err != nil || len(geoRes) == 0 {
+			return nil, fmt.Errorf("geocoding failed: %w", err)
+		}
+		return geoRes, nil
+	}
+
+	// Helper function to calculate the distance between two coordinates
+	calculateDistance := func(lat1, lng1, lat2, lng2 float64) float64 {
+		return math.Sqrt(math.Pow(lat1-lat2, 2) + math.Pow(lng1-lng2, 2))
+	}
+
+	// Average latitude and longitude for selecting closest option
+	getClosestResult := func(geoRes []GeocodeResult, avgLat, avgLng float64) GeocodeResult {
+		closest := geoRes[0]
+		closestDistance := calculateDistance(avgLat, avgLng, parseCoord(geoRes[0].Lat), parseCoord(geoRes[0].Lon))
+
+		for _, res := range geoRes[1:] {
+			lat := parseCoord(res.Lat)
+			lng := parseCoord(res.Lon)
+			distance := calculateDistance(avgLat, avgLng, lat, lng)
+
+			if distance < closestDistance {
+				closest = res
+				closestDistance = distance
+			}
+		}
+		return closest
+	}
+
+	for _, point := range fs.Points {
+		var lookupStrs = []string{
+			point.Title + " " + point.Description,
+			point.Title,
+			point.Description,
+		}
+
+		var geoRes []GeocodeResult
+		var err error
+
+		// Try each lookup strategy in order
+		for _, lookupStr := range lookupStrs {
+			geoRes, err = geocode(lookupStr)
+			if err == nil {
+				break // Exit loop if successful
+			}
+		}
+
+		// Handle geocoding failure
+		if err != nil {
+			point.WarningMessage = err.Error()
+			points = append(points, point)
+			continue
+		}
+
+		var selectedRes GeocodeResult
+
+		if len(geoRes) > 1 && processedPoints > 0 { // Use closest to average if multiple results exist
+			avgLat := totalLat / float64(processedPoints)
+			avgLng := totalLng / float64(processedPoints)
+			selectedRes = getClosestResult(geoRes, avgLat, avgLng)
+		} else {
+			selectedRes = geoRes[0]
+		}
+
+		// Parse and assign latitude and longitude
+		latFloat := parseCoord(selectedRes.Lat)
+		lngFloat := parseCoord(selectedRes.Lon)
+
+		point.Lat = latFloat
+		point.Lng = lngFloat
+		point.WarningMessage = ""
+
+		// Update total lat/lng and processed points for averaging
+		totalLat += latFloat
+		totalLng += lngFloat
+		processedPoints++
+
+		points = append(points, point)
+	}
+
+	return points
+}
+
+func buildGeoPromptMessages(messages []Message, query string, theme Theme) []Message {
 	startSystemPrompt := getStartGeoSearchPrompt(theme)
 
+	if len(messages) == 0 {
+		messages = append(messages, Message{
+			Role:    "system",
+			Content: startSystemPrompt,
+		})
+	}
+
+	messages = append(messages, Message{
+		Role:    "user",
+		Content: query,
+	})
+	return messages
+}
+
+func buildGeoPromptConfig(fs FractalSearch, messages []Message, theme Theme, dryRun bool) PromptConfig {
+
+	replacements := getGeoReplacements(fs)
+
+	var prompt string = fs.Query
+	for key, value := range replacements {
+		prompt = strings.Replace(prompt, key, value, -1)
+		log.Printf("After replacement (%s|%s): %s", key, value, prompt)
+	}
+
+	promptMessages := buildGeoPromptMessages(messages, fs.Query, theme)
+	for _, msg := range promptMessages {
+		log.Printf("%+v", msg)
+	}
 	promptConfig := PromptConfig{
-		StartSystemPrompt: startSystemPrompt,
+		StartSystemPrompt: "",
 		UserPrompt:        fs.Query,
 		Replacements:      replacements,
-		ExistingMessages:  fs.Messages,
+		Messages:          promptMessages,
 		Token:             os.Getenv("PERPLEXITY_API_TOKEN"),
+		DryRun:            dryRun,
 	}
 
 	log.Printf("PromptConfig: %+v", promptConfig)
@@ -417,14 +590,24 @@ func getStartGeoSearchPrompt(theme Theme) string {
 	if len(theme.StartGeoSystemPrompt) > 0 {
 		return theme.StartGeoSystemPrompt
 	} else {
-		return `You are designed to take a user's query, search for places or items matching the query, and return results in a structured format. Follow these steps:  
-		1. Categorize the results into logical groups, if applicable.  
-		2. Use headers ('#' for main categories, '##' for subcategories) to organize the information.  
-		3. Present items as bullet points, each on a single line, with relevant details, where applicable. Include details on the same line as the item.
-		4. At the end of your response, indicate whether the list is complete or incomplete by adding either 'LIST IS COMPLETE' or ''LIST IS INCOMPLETE'.  
-		
-**Example 1:**  
-# Great Walks  
+		return `You are designed to take a user's query, search for places matching the query, and return places in a structured format. 
+Follow these steps:  
+1. Categorize the results into logical groups, if applicable.  
+2. Use headers ('#' for main categories) to organize the list of locations  
+3. Only include the title and location of the place
+4. Only Present items short title and location, as bullet points, with the item name and the specific street address or location:
+5. Dont include any additional information or descriptions.
+
+
+
+Like this:
+# [category name]
+- [item name] - [location]
+
+
+
+Query: Great Walks in New Zealand
+# Great Walks
 	- Routeburn Track  
 	- Milford Track  
 	- Kepler Track  
@@ -439,35 +622,30 @@ func getStartGeoSearchPrompt(theme Theme) string {
 	- Hollyford Track  
 	- Te Araroa Trail  
 		
-LIST IS COMPLETE  
-		
-**Example 2:**
+
+	
+
 Query: Parks in Christchurch by size
 Result: 
-# Parks in Christchurch by size
-## **Big Parks**  
-- **Hagley Park**  
-- **Bottle Lake Forest Park**  
-- **Halswell Quarry Park**  
-- **The Groynes**  
-- **Travis Wetland Nature Heritage Park**
+# Big Parks
+- Hagley Park  
+- Bottle Lake Forest Park
+- Halswell Quarry Park
+- The Groynes**  
+- Travis Wetland Nature Heritage Park
 
-## **Medium Parks**  
-- **Victoria Park**  
-- **Spencer Park**  
-- **Abberley Park**  
-- **Risingholme Park**
+# Medium Parks
+- Victoria Park  
+- Spencer Park  
+- Abberley Park  
+- Risingholme Park
 
-## **Small Parks**  
-- **Woodham Park**  
-- **Local neighborhood reserves (e.g., Beverley Park, Linwood Park)**  
-
----
-
-This grouping reflects relative size and significance based on their amenities and land area. Would you like more detailed descriptions or additional parks?
-		LIST IS INCOMPLETE  
+## Small Parks  
+- Woodham Park
+- Beverley Park
+- Linwood Park
 		
-		Be precise, clear, and consistent in your responses.
+Be precise, clear, and consistent in your responses.
 `
 	}
 }

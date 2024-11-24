@@ -111,50 +111,54 @@ type FractalAISearchInitInfo struct {
 	PlaceId     string
 	Country     string
 	AddressType string
+	Southwest   string
+	Southeast   string
+	Northeast   string
+	Northwest   string
 }
 
 type FractalSearch struct {
-	ID          uint      `gorm:"primaryKey"`
-	DisplayName string    `json:"display_name"`
-	Country     string    `json:"country"`
-	PlaceId     string    `json:"place_id"`
-	AddressType string    `json:"address_type"`
-	BoundingBox string    `json:"bounding_box"`
-	Query       string    `json:"query"`
-	Status      string    `json:"status"`
-	Messages    []Message `gorm:"type:jsonb" json:"messages"`
+	ID          uint   `gorm:"primaryKey"`
+	ThemeID     uint   `json:"theme_id"`
+	DisplayName string `json:"display_name"`
+	Country     string `json:"country"`
+	PlaceId     string `json:"place_id"`
+	Query       string `json:"query"`
+	Status      string `json:"status"`
 }
 
 type FractalSearchFull struct {
 	FractalSearch
-	Points []Point
+	Points   []Point
+	Messages []Message
 }
 
 type Point struct {
-	ID              uint    `gorm:"primaryKey"`
-	Title           string  `gorm:"not null"`
-	Description     string  `gorm:"default:null"`
-	Lat             float64 `gorm:"default:null"`
-	Lng             float64 `gorm:"default:null"`
-	ThemeID         uint    `gorm:"default:null"`
-	FractalSearchID uint    `gorm:"default:null"`
-	PointType       string  `gorm:"default:null"`
-	Url             string  `gorm:"default:null"`
-	CleanAddress    string  `gorm:"default:null"`
+	ID                         uint    `gorm:"primaryKey"`
+	Title                      string  `gorm:"not null"`
+	Description                string  `gorm:"default:null"`
+	Lat                        float64 `gorm:"default:null"`
+	Lng                        float64 `gorm:"default:null"`
+	ThemeID                    uint    `gorm:"default:null"`
+	FractalSearchID            uint    `gorm:"default:null"`
+	FractalSearchResultGroupID uint    `gorm:"default:null"`
+	PointType                  string  `gorm:"default:null"`
+	Url                        string  `gorm:"default:null"`
+	CleanAddress               string  `gorm:"default:null"`
+	WarningMessage             string  `gorm:"default:null"`
 }
 
-type FractalSearchResult struct {
-	ID              uint     `gorm:"primaryKey"`
-	FractalSearchID uint     `json:"fractal_search_id"`
-	DisplayName     string   `json:"display_name"`
-	Query           string   `json:"query"`
-	PointTypeName   string   `json:"point_type_name"`
-	Points          []string `gorm:"type:jsonb" json:"points"`
+type FractalSearchResultGroup struct {
+	ID              uint   `gorm:"primaryKey"`
+	FractalSearchID uint   `json:"fractal_search_id"`
+	DisplayName     string `json:"display_name"`
+	PointTypeName   string `json:"point_type_name"`
 }
 
 type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	FractalSearchID uint   `json:"fractal_search_id"`
+	Role            string `json:"role"`
+	Content         string `json:"content"`
 }
 
 type ActionMode struct {
@@ -241,15 +245,15 @@ func GetPointMeta(db *gorm.DB, themeIDOverride uint) PointMeta {
 		},
 		factors: allFactors,
 		actionModes: []ActionMode{
-			{ID: 1, Key: "queries", Name: "Queries", Details: loadFractalSearches()},
 			{ID: 1, Key: "navigate", Name: "Navigate", Details: navigateDescription()},
-			{ID: 2, Key: "point", Name: "Add Points", Details: addPointsDescription()},
-			{ID: 3, Key: "existing-points", Name: "Existing Points", Details: pointListLoad(), FullPanel: true},
-			{ID: 4, Key: "image", Name: "Add Images", Details: resizeModeWords()},
+			{ID: 2, Key: "queries", Name: "Queries", Details: loadFractalSearches(0)},
+			{ID: 3, Key: "point", Name: "Add Points", Details: addPointsDescription()},
+			{ID: 4, Key: "existing-points", Name: "Existing Points", Details: pointListLoad(), FullPanel: true},
+			{ID: 5, Key: "image", Name: "Add Images", Details: resizeModeWords()},
 			//{ID: 3, Key: "add-image", Name: "Add Image", Details: addImage()},
-			{ID: 5, Key: "area", Name: "Areas", Details: addAreasDescription()},
-			{ID: 6, Key: "manage", Name: "Manage", Details: manageDescription()},
-			{ID: 7, Key: "factor", Name: "Factors", Details: factorListLoad()},
+			{ID: 6, Key: "area", Name: "Areas", Details: addAreasDescription()},
+			{ID: 7, Key: "manage", Name: "Manage", Details: manageDescription()},
+			{ID: 8, Key: "factor", Name: "Factors", Details: factorListLoad()},
 		},
 		theme: activeTheme,
 	}
