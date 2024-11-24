@@ -305,7 +305,12 @@ func setThemeHandler(db *gorm.DB) http.HandlerFunc {
 		case "GET":
 			{
 				allowEditing := false
-				themes := GetThemes(db)
+				themes, err := GetThemes(db)
+				if err != nil {
+					warning := warning(fmt.Sprintf("Failed to get themes - %s", err))
+					warning.Render(GetContext(r), w)
+					return
+				}
 
 				themeId, err := getThemeID(r)
 				if err != nil {
@@ -400,7 +405,12 @@ func themeEditHandler(db *gorm.DB) http.HandlerFunc {
 			}
 
 			theme := GetActiveTheme(db, uint(themeId))
-			themes := GetThemes(db)
+			themes, err := GetThemes(db)
+			if err != nil {
+				warning := warning(fmt.Sprintf("Failed to get themes - %s", err))
+				warning.Render(GetContext(r), w)
+				return
+			}
 			themeEdit := setTheme(themes, theme.ID, true)
 			themeEdit.Render(GetContext(r), w)
 			return

@@ -23,6 +23,7 @@ func DBInit(config EnvConfig) (*gorm.DB, error) {
 
 	InitShapeTypes(db)
 	InitShapeKinds(db)
+	InitTheme(db)
 	return db, nil
 }
 
@@ -70,6 +71,24 @@ func InitShapeKinds(db *gorm.DB) error {
 		err := db.Where(ShapeKind{ID: shape.ID}).FirstOrCreate(&shape).Error
 		if err != nil {
 			log.Fatal("failed to create shape:", err)
+		}
+	}
+	return nil
+}
+
+func InitTheme(db *gorm.DB) error {
+	themes, err := GetThemes(db)
+	if err != nil {
+		log.Fatal("failed to get themes:", err)
+	}
+
+	if len(themes) == 0 {
+		theme := Theme{
+			Name: "Default",
+		}
+		err := db.Create(&theme)
+		if err.Error != nil {
+			log.Fatal("failed to create theme:", err.Error)
 		}
 	}
 	return nil
@@ -179,14 +198,13 @@ func SaveTheme(db *gorm.DB, theme Theme) (*Theme, error) {
 	return &theme, nil
 }
 
-func GetThemes(db *gorm.DB) []Theme {
+func GetThemes(db *gorm.DB) ([]Theme, error) {
 	var themes []Theme
 	err := db.Find(&themes)
 	if err.Error != nil {
-		log.Printf("failed to get themes: %v", err.Error)
-		themes = []Theme{}
+		return nil, err.Error
 	}
-	return themes
+	return themes, nil
 }
 
 func DeleteFactor(db *gorm.DB, id uint) (Factor, error) {
